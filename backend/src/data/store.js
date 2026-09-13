@@ -5,11 +5,29 @@
 export const users = [
   {
     id: '1',
-    name: 'Admin',
+    name: 'Admin User',
     loginId: 'admin1',
     email: 'admin@urbanfurniture.com',
     password: 'Admin@123!',
     role: 'Admin',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    name: 'Standard User',
+    loginId: 'user1',
+    email: 'user1@urbanfurniture.com',
+    password: 'User@123!',
+    role: 'Accountant',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '3',
+    name: 'Quick User',
+    loginId: 'user',
+    email: 'user@urbanfurniture.com',
+    password: 'user',
+    role: 'Accountant',
     createdAt: new Date().toISOString(),
   },
 ];

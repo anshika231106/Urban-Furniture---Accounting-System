@@ -5,8 +5,11 @@ import { validateLoginId, validateEmail, validatePassword } from '../utils/valid
 export function login(req, res) {
   const { loginId, password } = req.body;
 
+  const cleanId = (loginId || '').trim().toLowerCase();
+  const cleanPass = (password || '').trim();
+
   const user = users.find(
-    (u) => u.loginId === loginId && u.password === password
+    (u) => u.loginId.toLowerCase() === cleanId && u.password === cleanPass
   );
 
   if (!user) {

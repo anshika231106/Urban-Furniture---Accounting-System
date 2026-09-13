@@ -27,16 +27,26 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (loginId, password) => {
-    const res = await fetch(`${API_BASE}/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ loginId, password }),
-    });
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loginId, password }),
+      });
+    } catch (err) {
+      throw new Error('Backend server disconnected. Please ensure backend server is running on port 3001.');
+    }
 
-    const data = await res.json();
+    let data;
+    try {
+      data = await res.json();
+    } catch (err) {
+      throw new Error('Server returned invalid response. Please check server logs.');
+    }
 
     if (!res.ok) {
-      throw new Error(data.error || 'Login failed');
+      throw new Error(data.error || 'Invalid Login Id or Password');
     }
 
     localStorage.setItem('uf_token', data.token);

@@ -7,8 +7,9 @@ export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [loginId, setLoginId] = useState('');
-  const [password, setPassword] = useState('');
+  // Pre-fill valid Admin credentials by default per user request
+  const [loginId, setLoginId] = useState('admin1');
+  const [password, setPassword] = useState('Admin@123!');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -25,7 +26,6 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       const user = await login(loginId.trim(), password);
-      // Contact User goes to portal, others go to dashboard
       if (user.role === 'ContactUser') {
         navigate('/portal');
       } else {
@@ -38,12 +38,40 @@ export default function LoginPage() {
     }
   };
 
+  // Helper buttons ONLY populate fields — they DO NOT auto-submit
+  const handleFillCredentials = (id, pass) => {
+    setLoginId(id);
+    setPassword(pass);
+    setError('');
+  };
+
   return (
     <div className="auth-page" id="login-page">
       <div className="auth-card">
         <div className="auth-brand">
           <h1 className="auth-brand-name">Urban Furniture</h1>
           <p className="auth-brand-sub">Accounting system</p>
+        </div>
+
+        {/* Demo Helper Buttons (Fill inputs only) */}
+        <div className="demo-credentials-box">
+          <div className="demo-credentials-title">📌 Fill Quick Credentials</div>
+          <div className="demo-btn-group demo-btn-group-two">
+            <button
+              type="button"
+              className="demo-btn"
+              onClick={() => handleFillCredentials('admin1', 'Admin@123!')}
+            >
+              👑 Fill Admin
+            </button>
+            <button
+              type="button"
+              className="demo-btn"
+              onClick={() => handleFillCredentials('user1', 'User@123!')}
+            >
+              👤 Fill User
+            </button>
+          </div>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
@@ -63,7 +91,7 @@ export default function LoginPage() {
               type="text"
               value={loginId}
               onChange={(e) => setLoginId(e.target.value)}
-              placeholder="Enter your login Id"
+              placeholder="Enter login Id"
               autoComplete="username"
               autoFocus
             />
@@ -80,7 +108,7 @@ export default function LoginPage() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder="Enter password"
                 autoComplete="current-password"
               />
               <button
