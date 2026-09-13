@@ -1,0 +1,63 @@
+/* App Layout styles */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left var(--duration-normal) var(--ease-out);
+}
+
+.app-main-content {
+  flex: 1;
+  padding: var(--space-6) var(--space-8);
+  max-width: calc(var(--content-max-width) + var(--space-16));
+  width: 100%;
+}
+
+/* Placeholder page for unbuilt modules */
+.placeholder-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  color: var(--ink-muted);
+}
+
+.placeholder-icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-4);
+  opacity: 0.5;
+}
+
+.placeholder-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--ink-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.placeholder-text {
+  font-size: var(--text-sm);
+  max-width: 360px;
+  line-height: var(--leading-relaxed);
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    margin-left: 0;
+  }
+
+  .app-main-content {
+    padding: var(--space-4);
+  }
+}
