@@ -1,0 +1,39 @@
+.view-toggle {
+  display: inline-flex;
+  background: var(--surface-inset, #EFEEE9);
+  padding: 3px;
+  border-radius: var(--radius-md, 6px);
+  border: 1px solid var(--border-subtle, #D9D8D2);
+  gap: 2px;
+}
+
+.view-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: var(--text-xs, 12px);
+  font-weight: var(--weight-medium, 500);
+  color: var(--ink-secondary, #5C5C6E);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  transition: all var(--duration-fast, 150ms) ease;
+}
+
+.view-toggle-btn:hover {
+  color: var(--ink-primary, #1A1A2E);
+}
+
+.view-toggle-btn.active {
+  background: var(--surface-raised, #FFFFFF);
+  color: var(--accent-primary, #2D6A4F);
+  font-weight: var(--weight-semibold, 600);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.toggle-icon {
+  font-size: 14px;
+  line-height: 1;
+}
