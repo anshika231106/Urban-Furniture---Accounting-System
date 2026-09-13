@@ -8,7 +8,10 @@
     "dev": "node src/server.js"
   },
   "dependencies": {
+    "@prisma/client": "^7.10.0",
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "prisma": "^7.10.0"
   }
 }

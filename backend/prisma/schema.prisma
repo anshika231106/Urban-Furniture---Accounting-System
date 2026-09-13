@@ -1,0 +1,525 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+// ----------------------------------------------------------
+// ENUMS
+// ----------------------------------------------------------
+
+// FLAG (MVP.md §1 / §10 only define Admin, Accountant, ContactUser — the
+// old wireframe's Create User radio "User / Administrator" doesn't map to
+// a 4th role anywhere in the current spec. Treating MVP.md's Actors table
+// as authoritative. Confirm with team if "User" was meant to be distinct
+// from Accountant.)
+enum UserRole {
+  ADMIN
+  ACCOUNTANT
+  CONTACT // portal login for a Contact — read-only on own invoices/bills
+}
+
+enum ContactType {
+  CUSTOMER
+  VENDOR
+  BOTH
+}
+
+enum ProductType {
+  GOODS
+  SERVICE
+  COMBO
+}
+
+// FLAG: MVP.md §4.3's dropdown text and §10's Data Model Summary both list
+// Bank and Cash as their OWN account types (separate from Asset). But
+// §4.3's seed table AND §9.2's Balance Sheet formula ("Account type Asset
+// − Bank") both treat Bank A/c and Cash A/c as type = Asset, distinguished
+// by NAME only. This schema follows the seed table + §9.2 formulas since
+// the Balance Sheet math depends on it — confirm with team before backend
+// build starts.
+enum AccountType {
+  ASSET
+  LIABILITY
+  INCOME
+  EXPENSE
+  CAPITAL
+  OTHER_EXPENSE
+}
+
+enum JournalType {
+  SALES
+  PURCHASE
+  BANK
+  CASH
+}
+
+enum AnalyticType {
+  INCOME
+  EXPENSE
+}
+
+enum DocStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+enum BudgetStatus {
+  DRAFT
+  CONFIRMED
+  REVISED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PAID
+  PARTIAL
+  NOT_PAID
+}
+
+enum PaymentType {
+  SEND
+  RECEIVE
+}
+
+enum PaymentVia {
+  CASH
+  BANK
+}
+
+enum PaymentDocStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+enum JournalEntryStatus {
+  DRAFT
+  POSTED
+}
+
+enum SourceType {
+  VENDOR_BILL
+  CUSTOMER_INVOICE
+  BILL_PAYMENT
+  INVOICE_PAYMENT
+  MANUAL
+}
+
+// ----------------------------------------------------------
+// AUTH
+// ----------------------------------------------------------
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  loginId   String   @unique // 6-12 chars, enforce length in app layer (MVP.md §2.1)
+  email     String   @unique
+  password  String   // store bcrypt hash, never plain text
+  role      UserRole
+  contactId String?  @unique // set only when role = CONTACT (MVP.md: "Contact users
+                              // can be created when creating Contact Master data")
+  contact   Contact? @relation(fields: [contactId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ----------------------------------------------------------
+// MASTER DATA
+// ----------------------------------------------------------
+
+model Contact {
+  id        String      @id @default(cuid())
+  name      String
+  type      ContactType
+  email     String      @unique
+  phone     String?
+  street    String?
+  city      String?
+  state     String?
+  country   String?
+  pincode   String?
+  imageUrl  String?
+  archived  Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  portalUser         User?
+  purchaseOrders     PurchaseOrder[]    @relation("VendorPOs")
+  vendorBills        VendorBill[]       @relation("VendorBills")
+  salesOrders        SalesOrder[]       @relation("CustomerSOs")
+  customerInvoices   CustomerInvoice[]  @relation("CustomerInvoices")
+  billPayments       BillPayment[]
+  invoicePayments    InvoicePayment[]
+  budgetsResponsible Budget[]
+  journalEntryLines  JournalEntryLine[] // partner tracked at line level only (MVP.md §4.5)
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[]
+}
+
+model Product {
+  id         String      @id @default(cuid())
+  name       String
+  type       ProductType
+  categoryId String?
+  category   Category?   @relation(fields: [categoryId], references: [id])
+  salesPrice Decimal     @db.Decimal(12, 2)
+  cost       Decimal     @db.Decimal(12, 2)
+  imageUrl   String?
+  archived   Boolean     @default(false)
+
+  poLines   PurchaseOrderLine[]
+  billLines VendorBillLine[]
+  soLines   SalesOrderLine[]
+  invLines  CustomerInvoiceLine[]
+
+  @@index([categoryId])
+}
+
+model Account {
+  id       String      @id @default(cuid())
+  name     String
+  type     AccountType
+  archived Boolean     @default(false)
+
+  journalsDefault   Journal[]
+  billLines         VendorBillLine[]
+  invoiceLines      CustomerInvoiceLine[]
+  journalEntryLines JournalEntryLine[]
+}
+
+model Journal {
+  id               String      @id @default(cuid())
+  name             String
+  type             JournalType
+  defaultAccountId String
+  defaultAccount   Account     @relation(fields: [defaultAccountId], references: [id])
+
+  journalEntries JournalEntry[]
+
+  @@index([defaultAccountId])
+}
+
+// ----------------------------------------------------------
+// BUDGETING
+// ----------------------------------------------------------
+
+// FLAG: type kept here per MVP.md §5.1 form spec, but is a DEFAULT only —
+// see BudgetLine.type for the field that actually drives Achieved Amount
+// computation (§5.2's own example uses the same Analytic Account as both
+// Income and Expense across two different Budget lines).
+model AnalyticAccount {
+  id   String       @id @default(cuid())
+  name String
+  type AnalyticType
+
+  budgetLines  BudgetLine[]
+  poLines      PurchaseOrderLine[]
+  billLines    VendorBillLine[]
+  soLines      SalesOrderLine[]
+  invoiceLines CustomerInvoiceLine[]
+}
+
+model Budget {
+  id            String       @id @default(cuid())
+  name          String       // MVP.md §5.2: on Revision, keep original name + append " Revised"
+  startDate     DateTime
+  endDate       DateTime
+  responsibleId String
+  responsible   Contact      @relation(fields: [responsibleId], references: [id])
+  status        BudgetStatus @default(DRAFT)
+
+  // self-relation: a Revised budget is a NEW record linked back to the original
+  revisionOfId String? @unique
+  revisionOf   Budget? @relation("BudgetRevision", fields: [revisionOfId], references: [id])
+  revisedBy    Budget? @relation("BudgetRevision")
+
+  createdAt DateTime @default(now())
+
+  lines BudgetLine[]
+
+  @@index([responsibleId])
+}
+
+model BudgetLine {
+  id                String          @id @default(cuid())
+  budgetId          String
+  budget            Budget          @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  analyticAccountId String
+  analyticAccount   AnalyticAccount @relation(fields: [analyticAccountId], references: [id])
+  type              AnalyticType    // drives which table Achieved Amount rolls up from
+  committedAmount   Decimal         @db.Decimal(12, 2)
+  // achievedAmount / achieved% / amountToAchieve: computed at query time only
+  // (MVP.md §5.2). Income → sum CustomerInvoiceLine; Expense → sum
+  // VendorBillLine; both filtered by this analyticAccountId + Budget's
+  // [startDate, endDate]. Never store these.
+
+  @@index([analyticAccountId])
+}
+
+// ----------------------------------------------------------
+// PURCHASE FLOW
+// ----------------------------------------------------------
+
+model PurchaseOrder {
+  id       String    @id @default(cuid())
+  poNumber String    @unique // auto +1 of last order, e.g. PO0001 (MVP.md §6.1)
+  vendorId String
+  vendor   Contact   @relation("VendorPOs", fields: [vendorId], references: [id])
+  poDate   DateTime
+  status   DocStatus @default(DRAFT)
+  total    Decimal   @db.Decimal(12, 2) @default(0)
+
+  lines PurchaseOrderLine[]
+  bills VendorBill[]
+
+  @@index([vendorId])
+  @@index([poDate])
+}
+
+model PurchaseOrderLine {
+  id                String           @id @default(cuid())
+  purchaseOrderId   String
+  purchaseOrder     PurchaseOrder    @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product          @relation(fields: [productId], references: [id])
+  analyticAccountId String?
+  analyticAccount   AnalyticAccount? @relation(fields: [analyticAccountId], references: [id])
+  qty               Decimal          @db.Decimal(12, 2)
+  unitPrice         Decimal          @db.Decimal(12, 2)
+  total             Decimal          @db.Decimal(12, 2) // computed server-side: qty * unitPrice
+
+  @@index([analyticAccountId])
+  @@index([productId])
+}
+
+model VendorBill {
+  id              String         @id @default(cuid())
+  billNumber      String         @unique // auto, e.g. Bill/2026/0001
+  reference       String?        // "Bill Reference" — free text (MVP.md §6.2)
+  vendorId        String
+  vendor          Contact        @relation("VendorBills", fields: [vendorId], references: [id])
+  billDate        DateTime
+  dueDate         DateTime?
+  purchaseOrderId String?        // set only if Bill was created via PO's "Create Bill"
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  status          DocStatus      @default(DRAFT)
+  paymentStatus   PaymentStatus  @default(NOT_PAID) // computed server-side from amountDue
+  total           Decimal        @db.Decimal(12, 2) @default(0)
+  amountDue       Decimal        @db.Decimal(12, 2) @default(0) // recompute on every payment confirm/cancel
+  // "Paid Via Cash" / "Paid Via Bank" footer totals (MVP.md §6.2) are NOT
+  // stored columns — compute by summing this bill's BillPayment.amount
+  // grouped by paymentVia.
+
+  lines          VendorBillLine[]
+  payments       BillPayment[]
+  journalEntries JournalEntry[]
+
+  @@index([vendorId])
+  @@index([billDate])
+  @@index([purchaseOrderId])
+}
+
+model VendorBillLine {
+  id                String           @id @default(cuid())
+  vendorBillId      String
+  vendorBill        VendorBill       @relation(fields: [vendorBillId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product          @relation(fields: [productId], references: [id])
+  accountId         String
+  account           Account          @relation(fields: [accountId], references: [id]) // defaults to Purchase Expense A/c
+  analyticAccountId String?
+  analyticAccount   AnalyticAccount? @relation(fields: [analyticAccountId], references: [id])
+  qty               Decimal          @db.Decimal(12, 2)
+  unitPrice         Decimal          @db.Decimal(12, 2)
+  total             Decimal          @db.Decimal(12, 2) // computed: qty * unitPrice
+
+  @@index([analyticAccountId])
+  @@index([accountId])
+  @@index([productId])
+}
+
+// ----------------------------------------------------------
+// SALES FLOW
+// ----------------------------------------------------------
+
+model SalesOrder {
+  id         String    @id @default(cuid())
+  soNumber   String    @unique // e.g. S00001
+  customerId String
+  customer   Contact   @relation("CustomerSOs", fields: [customerId], references: [id])
+  soDate     DateTime
+  status     DocStatus @default(DRAFT)
+  total      Decimal   @db.Decimal(12, 2) @default(0)
+
+  lines    SalesOrderLine[]
+  invoices CustomerInvoice[]
+
+  @@index([customerId])
+  @@index([soDate])
+}
+
+model SalesOrderLine {
+  id                String           @id @default(cuid())
+  salesOrderId      String
+  salesOrder        SalesOrder       @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product          @relation(fields: [productId], references: [id])
+  analyticAccountId String?
+  analyticAccount   AnalyticAccount? @relation(fields: [analyticAccountId], references: [id])
+  qty               Decimal          @db.Decimal(12, 2)
+  unitPrice         Decimal          @db.Decimal(12, 2)
+  total             Decimal          @db.Decimal(12, 2)
+
+  @@index([analyticAccountId])
+  @@index([productId])
+}
+
+model CustomerInvoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique // e.g. INV/2026/0001
+  reference     String?       // "Invoice Reference"
+  customerId    String
+  customer      Contact       @relation("CustomerInvoices", fields: [customerId], references: [id])
+  invoiceDate   DateTime
+  dueDate       DateTime?
+  salesOrderId  String?
+  salesOrder    SalesOrder?   @relation(fields: [salesOrderId], references: [id])
+  status        DocStatus     @default(DRAFT)
+  paymentStatus PaymentStatus @default(NOT_PAID)
+  total         Decimal       @db.Decimal(12, 2) @default(0)
+  amountDue     Decimal       @db.Decimal(12, 2) @default(0)
+
+  lines          CustomerInvoiceLine[]
+  payments       InvoicePayment[]
+  journalEntries JournalEntry[]
+
+  @@index([customerId])
+  @@index([invoiceDate])
+  @@index([salesOrderId])
+}
+
+model CustomerInvoiceLine {
+  id                 String           @id @default(cuid())
+  customerInvoiceId  String
+  customerInvoice    CustomerInvoice  @relation(fields: [customerInvoiceId], references: [id], onDelete: Cascade)
+  productId          String
+  product            Product          @relation(fields: [productId], references: [id])
+  accountId          String
+  account            Account          @relation(fields: [accountId], references: [id]) // defaults to Sales Income A/c
+  analyticAccountId  String?
+  analyticAccount    AnalyticAccount? @relation(fields: [analyticAccountId], references: [id])
+  qty                Decimal          @db.Decimal(12, 2)
+  unitPrice          Decimal          @db.Decimal(12, 2)
+  total              Decimal          @db.Decimal(12, 2)
+
+  @@index([analyticAccountId])
+  @@index([accountId])
+  @@index([productId])
+}
+
+// ----------------------------------------------------------
+// PAYMENTS
+// MVP.md §10 models BillPayment and InvoicePayment as two separate
+// entities (not one shared table) — split accordingly.
+// ----------------------------------------------------------
+
+model BillPayment {
+  id           String           @id @default(cuid())
+  paymentType  PaymentType      @default(SEND) // Bill payment defaults to Send (MVP.md §6.3)
+  partnerId    String           // auto-filled from the Bill's vendor
+  partner      Contact          @relation(fields: [partnerId], references: [id])
+  vendorBillId String
+  vendorBill   VendorBill       @relation(fields: [vendorBillId], references: [id])
+  amount       Decimal          @db.Decimal(12, 2) // auto-filled from Bill's amountDue
+  date         DateTime         @default(now())
+  paymentVia   PaymentVia       @default(BANK)
+  note         String?
+  status       PaymentDocStatus @default(DRAFT)
+
+  journalEntries JournalEntry[]
+
+  @@index([partnerId])
+  @@index([vendorBillId])
+}
+
+model InvoicePayment {
+  id                String           @id @default(cuid())
+  paymentType       PaymentType      @default(RECEIVE) // Invoice payment defaults to Receive (MVP.md §7.3)
+  partnerId         String           // auto-filled from the Invoice's customer
+  partner           Contact          @relation(fields: [partnerId], references: [id])
+  customerInvoiceId String
+  customerInvoice   CustomerInvoice  @relation(fields: [customerInvoiceId], references: [id])
+  amount            Decimal          @db.Decimal(12, 2) // auto-filled from Invoice's amountDue
+  date              DateTime         @default(now())
+  paymentVia        PaymentVia       @default(BANK)
+  note              String?
+  status            PaymentDocStatus @default(DRAFT)
+
+  journalEntries JournalEntry[]
+
+  @@index([partnerId])
+  @@index([customerInvoiceId])
+}
+
+// ----------------------------------------------------------
+// ACCOUNTING LEDGER
+// ----------------------------------------------------------
+
+// NOTE (MVP.md Rule 6): Postgres/Prisma cannot enforce sum(debit) =
+// sum(credit) at the schema level. Before writing status = POSTED, the
+// app layer MUST validate the balance and write the JournalEntry + its
+// JournalEntryLines inside a single db transaction (prisma.$transaction)
+// so a crash never leaves an unbalanced, posted entry behind. This is a
+// hard blocking rule per MVP.md, not a warning.
+model JournalEntry {
+  id        String             @id @default(cuid())
+  journalId String
+  journal   Journal            @relation(fields: [journalId], references: [id])
+  date      DateTime           // "Accounting Date" (MVP.md §4.5)
+  number    String             @unique
+  total     Decimal            @db.Decimal(12, 2)
+  status    JournalEntryStatus @default(DRAFT) // Post button -> POSTED
+  // Partner intentionally NOT on the header — MVP.md §4.5 shows Partner
+  // only at the line level.
+
+  // traceability back to what generated this entry (MVP.md §8 table)
+  sourceType        SourceType?
+  vendorBillId      String?
+  vendorBill        VendorBill?      @relation(fields: [vendorBillId], references: [id])
+  customerInvoiceId String?
+  customerInvoice   CustomerInvoice? @relation(fields: [customerInvoiceId], references: [id])
+  billPaymentId     String?
+  billPayment       BillPayment?     @relation(fields: [billPaymentId], references: [id])
+  invoicePaymentId  String?
+  invoicePayment    InvoicePayment?  @relation(fields: [invoicePaymentId], references: [id])
+
+  lines JournalEntryLine[]
+
+  @@index([journalId])
+  @@index([date])
+}
+
+model JournalEntryLine {
+  id             String       @id @default(cuid())
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  accountId      String
+  account        Account      @relation(fields: [accountId], references: [id])
+  partnerId      String?
+  partner        Contact?     @relation(fields: [partnerId], references: [id])
+  debit          Decimal      @db.Decimal(12, 2) @default(0)
+  credit         Decimal      @db.Decimal(12, 2) @default(0)
+
+  @@index([accountId])
+  @@index([partnerId])
+}
