@@ -8,6 +8,7 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import CreateUserPage from './pages/auth/CreateUserPage';
 import DashboardPage from './pages/DashboardPage';
 import PlaceholderPage from './pages/PlaceholderPage';
+import ProductsPage from './pages/account/ProductsPage';
 
 export default function App() {
   return (
@@ -73,10 +74,7 @@ export default function App() {
               path="account/contacts"
               element={<PlaceholderPage title="Contacts" icon="👤" />}
             />
-            <Route
-              path="account/products"
-              element={<PlaceholderPage title="Products" icon="📦" />}
-            />
+            <Route path="account/products" element={<ProductsPage />} />
             <Route
               path="account/analytics"
               element={<PlaceholderPage title="Analyticals" icon="📈" />}
