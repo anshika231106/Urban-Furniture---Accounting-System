@@ -125,6 +125,53 @@ export const analyticAccounts = [
   { id: 'an-2', name: 'Showroom Operations', type: 'Expenses' },
 ];
 
+// 4.5 Journal Entries
+export const journalEntries = [
+  {
+    id: 'je-1',
+    number: 'MISC/2026/0001',
+    accountingDate: new Date().toISOString().split('T')[0],
+    journalId: 'j-3',
+    journalName: 'Bank',
+    partnerId: 'c-2',
+    partnerName: 'Urban Living Studios',
+    status: 'Posted',
+    total: 1000,
+    lines: [
+      {
+        id: 'jel-1',
+        accountId: 'coa-1',
+        accountName: 'Bank A/c',
+        partnerId: 'c-2',
+        partnerName: 'Urban Living Studios',
+        debit: 1000,
+        credit: 0,
+      },
+      {
+        id: 'jel-2',
+        accountId: 'coa-5',
+        accountName: 'Sales Income A/c',
+        partnerId: 'c-2',
+        partnerName: 'Urban Living Studios',
+        debit: 0,
+        credit: 1000,
+      },
+    ],
+    createdAt: new Date().toISOString(),
+  },
+];
+
+// Sequence counters
+let journalEntrySequence = 1;
+
+export function getNextJournalEntryNumber(journalName = 'MISC') {
+  journalEntrySequence += 1;
+  const prefix = journalName.substring(0, 4).toUpperCase();
+  const year = new Date().getFullYear();
+  const seq = String(journalEntrySequence).padStart(4, '0');
+  return `${prefix}/${year}/${seq}`;
+}
+
 // Data helper functions
 export function findUserByToken(token) {
   const userId = tokens[token];
