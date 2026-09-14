@@ -1,176 +1,123 @@
-import {
-  journalEntries,
-  journals,
-  chartOfAccounts,
-  contacts,
-  getNextJournalEntryNumber,
-} from '../data/store.js';
-import { generateId } from '../utils/crypto.js';
+import { prisma } from '../lib/prisma.js';
+
+function formatJournalEntry(entry) {
+  return {
+    id: entry.id,
+    number: entry.number,
+    accountingDate: entry.date ? new Date(entry.date).toISOString().split('T')[0] : '',
+    journalId: entry.journalId,
+    journalName: entry.journal?.name || '',
+    status: entry.status === 'POSTED' ? 'Posted' : 'Draft',
+    total: Number(entry.total || 0),
+    sourceType: entry.sourceType || 'MANUAL',
+    lines: (entry.lines || []).map((l) => ({
+      id: l.id,
+      accountId: l.accountId,
+      accountName: l.account?.name || '',
+      partnerId: l.partnerId || '',
+      partnerName: l.partner?.name || '',
+      debit: Number(l.debit || 0),
+      credit: Number(l.credit || 0),
+    })),
+  };
+}
 
 /**
  * GET /api/journal-entries
- * List all journal entries (optional query param: ?status=Draft|Posted|Cancelled)
+ * List all journal entries from Prisma DB (optional query param: ?status=Draft|Posted)
  */
-export function getJournalEntries(req, res) {
-  const { status } = req.query;
-  if (status) {
-    const filtered = journalEntries.filter(
-      (j) => j.status.toLowerCase() === status.toLowerCase()
-    );
-    return res.json(filtered);
+export async function getJournalEntries(req, res) {
+  try {
+    const { status } = req.query;
+    const where = {};
+    if (status) {
+      where.status = status.toUpperCase() === 'POSTED' ? 'POSTED' : 'DRAFT';
+    }
+
+    const entries = await prisma.journalEntry.findMany({
+      where,
+      include: {
+        journal: true,
+        lines: {
+          include: {
+            account: true,
+            partner: true,
+          },
+        },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    res.json(entries.map(formatJournalEntry));
+  } catch (error) {
+    console.error('Error fetching journal entries from DB:', error);
+    res.status(500).json({ error: 'Failed to fetch journal entries.' });
   }
-  res.json(journalEntries);
 }
 
 /**
  * GET /api/journal-entries/:id
- * Get a single journal entry by ID
+ * Get a single journal entry by ID from Prisma DB
  */
-export function getJournalEntryById(req, res) {
-  const { id } = req.params;
-  const entry = journalEntries.find((j) => j.id === id);
-  if (!entry) {
-    return res.status(404).json({ error: 'Journal entry not found.' });
+export async function getJournalEntryById(req, res) {
+  try {
+    const { id } = req.params;
+    const entry = await prisma.journalEntry.findUnique({
+      where: { id },
+      include: {
+        journal: true,
+        lines: {
+          include: {
+            account: true,
+            partner: true,
+          },
+        },
+      },
+    });
+
+    if (!entry) {
+      return res.status(404).json({ error: 'Journal entry not found.' });
+    }
+
+    res.json(formatJournalEntry(entry));
+  } catch (error) {
+    console.error('Error fetching journal entry from DB:', error);
+    res.status(500).json({ error: 'Failed to fetch journal entry.' });
   }
-  res.json(entry);
 }
 
 /**
  * POST /api/journal-entries
- * Create a new journal entry in Draft status
+ * Create a new journal entry in Draft status in Prisma DB
  */
-export function createJournalEntry(req, res) {
-  const { accountingDate, journalId, partnerId, lines } = req.body;
+export async function createJournalEntry(req, res) {
+  try {
+    const { accountingDate, journalId, partnerId, lines } = req.body;
 
-  if (!journalId) {
-    return res.status(400).json({ error: 'Journal is required.' });
-  }
-
-  const targetJournal = journals.find((j) => j.id === journalId);
-  if (!targetJournal) {
-    return res.status(400).json({ error: 'Invalid Journal selected.' });
-  }
-
-  if (!Array.isArray(lines) || lines.length < 2) {
-    return res
-      .status(400)
-      .json({ error: 'Journal Entry must contain at least 2 lines.' });
-  }
-
-  const partnerObj = partnerId ? contacts.find((c) => c.id === partnerId) : null;
-
-  // Process & validate line items
-  const processedLines = [];
-  let totalDebit = 0;
-  let totalCredit = 0;
-
-  for (let i = 0; i < lines.length; i++) {
-    const l = lines[i];
-    if (!l.accountId) {
-      return res
-        .status(400)
-        .json({ error: `Line ${i + 1}: Account is required.` });
+    if (!journalId) {
+      return res.status(400).json({ error: 'Journal is required.' });
     }
 
-    const coaAccount = chartOfAccounts.find((a) => a.id === l.accountId);
-    if (!coaAccount) {
-      return res
-        .status(400)
-        .json({ error: `Line ${i + 1}: Invalid Account selected.` });
-    }
-
-    const linePartner = l.partnerId
-      ? contacts.find((c) => c.id === l.partnerId)
-      : partnerObj;
-
-    const debitVal = Math.max(0, Number(l.debit) || 0);
-    const creditVal = Math.max(0, Number(l.credit) || 0);
-
-    totalDebit += debitVal;
-    totalCredit += creditVal;
-
-    processedLines.push({
-      id: `jel-${generateId()}`,
-      accountId: coaAccount.id,
-      accountName: coaAccount.name,
-      partnerId: linePartner ? linePartner.id : '',
-      partnerName: linePartner ? linePartner.name : '',
-      debit: debitVal,
-      credit: creditVal,
+    // Lookup journal by ID or name
+    const targetJournal = await prisma.journal.findFirst({
+      where: {
+        OR: [{ id: journalId }, { name: journalId }],
+      },
     });
-  }
 
-  const number = getNextJournalEntryNumber(targetJournal.name);
-  const entryDate = accountingDate || new Date().toISOString().split('T')[0];
-
-  const newEntry = {
-    id: `je-${generateId()}`,
-    number,
-    accountingDate: entryDate,
-    journalId: targetJournal.id,
-    journalName: targetJournal.name,
-    partnerId: partnerObj ? partnerObj.id : '',
-    partnerName: partnerObj ? partnerObj.name : '',
-    status: 'Draft',
-    total: totalDebit,
-    lines: processedLines,
-    createdAt: new Date().toISOString(),
-  };
-
-  journalEntries.push(newEntry);
-  res.status(201).json(newEntry);
-}
-
-/**
- * PUT /api/journal-entries/:id
- * Update an existing Draft journal entry
- */
-export function updateJournalEntry(req, res) {
-  const { id } = req.params;
-  const entryIndex = journalEntries.findIndex((j) => j.id === id);
-
-  if (entryIndex === -1) {
-    return res.status(404).json({ error: 'Journal entry not found.' });
-  }
-
-  const existingEntry = journalEntries[entryIndex];
-  if (existingEntry.status !== 'Draft') {
-    return res
-      .status(400)
-      .json({ error: `Cannot edit entry in '${existingEntry.status}' state.` });
-  }
-
-  const { accountingDate, journalId, partnerId, lines } = req.body;
-
-  let journalObj = existingEntry.journalId
-    ? journals.find((j) => j.id === existingEntry.journalId)
-    : null;
-
-  if (journalId) {
-    journalObj = journals.find((j) => j.id === journalId);
-    if (!journalObj) {
+    if (!targetJournal) {
       return res.status(400).json({ error: 'Invalid Journal selected.' });
     }
-  }
 
-  const partnerObj = partnerId
-    ? contacts.find((c) => c.id === partnerId)
-    : existingEntry.partnerId
-    ? contacts.find((c) => c.id === existingEntry.partnerId)
-    : null;
-
-  let processedLines = existingEntry.lines;
-  let totalDebit = existingEntry.total;
-
-  if (Array.isArray(lines)) {
-    if (lines.length < 2) {
+    if (!Array.isArray(lines) || lines.length < 2) {
       return res
         .status(400)
         .json({ error: 'Journal Entry must contain at least 2 lines.' });
     }
 
-    processedLines = [];
-    totalDebit = 0;
+    let totalDebit = 0;
+    let totalCredit = 0;
+    const lineData = [];
 
     for (let i = 0; i < lines.length; i++) {
       const l = lines[i];
@@ -180,109 +127,297 @@ export function updateJournalEntry(req, res) {
           .json({ error: `Line ${i + 1}: Account is required.` });
       }
 
-      const coaAccount = chartOfAccounts.find((a) => a.id === l.accountId);
-      if (!coaAccount) {
+      const acc = await prisma.account.findFirst({
+        where: {
+          OR: [{ id: l.accountId }, { name: l.accountId }],
+        },
+      });
+
+      if (!acc) {
         return res
           .status(400)
           .json({ error: `Line ${i + 1}: Invalid Account selected.` });
       }
 
-      const linePartner = l.partnerId
-        ? contacts.find((c) => c.id === l.partnerId)
-        : partnerObj;
-
       const debitVal = Math.max(0, Number(l.debit) || 0);
       const creditVal = Math.max(0, Number(l.credit) || 0);
-
       totalDebit += debitVal;
+      totalCredit += creditVal;
 
-      processedLines.push({
-        id: l.id || `jel-${generateId()}`,
-        accountId: coaAccount.id,
-        accountName: coaAccount.name,
-        partnerId: linePartner ? linePartner.id : '',
-        partnerName: linePartner ? linePartner.name : '',
+      let resolvedPartnerId = null;
+      const pid = l.partnerId || partnerId;
+      if (pid) {
+        const partner = await prisma.contact.findFirst({
+          where: {
+            OR: [{ id: pid }, { name: pid }],
+          },
+        });
+        if (partner) resolvedPartnerId = partner.id;
+      }
+
+      lineData.push({
+        accountId: acc.id,
+        partnerId: resolvedPartnerId,
         debit: debitVal,
         credit: creditVal,
       });
     }
+
+    // Generate sequential entry number
+    const count = await prisma.journalEntry.count();
+    const year = new Date().getFullYear();
+    const prefix = targetJournal.name.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4) || 'JRNL';
+    const number = `${prefix}/${year}/${String(count + 1).padStart(4, '0')}`;
+    const date = accountingDate ? new Date(accountingDate) : new Date();
+
+    const created = await prisma.$transaction(async (tx) => {
+      return tx.journalEntry.create({
+        data: {
+          number,
+          journalId: targetJournal.id,
+          date,
+          status: 'DRAFT',
+          total: totalDebit,
+          sourceType: 'MANUAL',
+          lines: {
+            create: lineData,
+          },
+        },
+        include: {
+          journal: true,
+          lines: {
+            include: {
+              account: true,
+              partner: true,
+            },
+          },
+        },
+      });
+    });
+
+    res.status(201).json(formatJournalEntry(created));
+  } catch (error) {
+    console.error('Error creating journal entry in DB:', error);
+    res.status(500).json({ error: error.message || 'Failed to create journal entry in database.' });
   }
+}
 
-  const updatedEntry = {
-    ...existingEntry,
-    accountingDate: accountingDate || existingEntry.accountingDate,
-    journalId: journalObj ? journalObj.id : existingEntry.journalId,
-    journalName: journalObj ? journalObj.name : existingEntry.journalName,
-    partnerId: partnerObj ? partnerObj.id : '',
-    partnerName: partnerObj ? partnerObj.name : '',
-    lines: processedLines,
-    total: totalDebit,
-  };
+/**
+ * PUT /api/journal-entries/:id
+ * Update an existing Draft journal entry in Prisma DB
+ */
+export async function updateJournalEntry(req, res) {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.journalEntry.findUnique({
+      where: { id },
+      include: { lines: true },
+    });
 
-  journalEntries[entryIndex] = updatedEntry;
-  res.json(updatedEntry);
+    if (!existing) {
+      return res.status(404).json({ error: 'Journal entry not found.' });
+    }
+
+    if (existing.status === 'POSTED') {
+      return res
+        .status(400)
+        .json({ error: 'Cannot edit an already posted journal entry.' });
+    }
+
+    const { accountingDate, journalId, partnerId, lines } = req.body;
+
+    let targetJournalId = existing.journalId;
+    if (journalId) {
+      const j = await prisma.journal.findFirst({
+        where: { OR: [{ id: journalId }, { name: journalId }] },
+      });
+      if (!j) return res.status(400).json({ error: 'Invalid Journal selected.' });
+      targetJournalId = j.id;
+    }
+
+    let lineData = null;
+    let totalDebit = existing.total;
+
+    if (Array.isArray(lines)) {
+      if (lines.length < 2) {
+        return res
+          .status(400)
+          .json({ error: 'Journal Entry must contain at least 2 lines.' });
+      }
+
+      totalDebit = 0;
+      lineData = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i];
+        if (!l.accountId) {
+          return res
+            .status(400)
+            .json({ error: `Line ${i + 1}: Account is required.` });
+        }
+
+        const acc = await prisma.account.findFirst({
+          where: { OR: [{ id: l.accountId }, { name: l.accountId }] },
+        });
+        if (!acc) {
+          return res
+            .status(400)
+            .json({ error: `Line ${i + 1}: Invalid Account selected.` });
+        }
+
+        const debitVal = Math.max(0, Number(l.debit) || 0);
+        const creditVal = Math.max(0, Number(l.credit) || 0);
+        totalDebit += debitVal;
+
+        let resolvedPartnerId = null;
+        const pid = l.partnerId || partnerId;
+        if (pid) {
+          const partner = await prisma.contact.findFirst({
+            where: { OR: [{ id: pid }, { name: pid }] },
+          });
+          if (partner) resolvedPartnerId = partner.id;
+        }
+
+        lineData.push({
+          accountId: acc.id,
+          partnerId: resolvedPartnerId,
+          debit: debitVal,
+          credit: creditVal,
+        });
+      }
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      if (lineData) {
+        await tx.journalEntryLine.deleteMany({ where: { journalEntryId: id } });
+      }
+
+      return tx.journalEntry.update({
+        where: { id },
+        data: {
+          journalId: targetJournalId,
+          date: accountingDate ? new Date(accountingDate) : existing.date,
+          total: totalDebit,
+          ...(lineData ? { lines: { create: lineData } } : {}),
+        },
+        include: {
+          journal: true,
+          lines: {
+            include: {
+              account: true,
+              partner: true,
+            },
+          },
+        },
+      });
+    });
+
+    res.json(formatJournalEntry(updated));
+  } catch (error) {
+    console.error('Error updating journal entry in DB:', error);
+    res.status(500).json({ error: error.message || 'Failed to update journal entry in database.' });
+  }
 }
 
 /**
  * POST /api/journal-entries/:id/post
  * Post a Draft journal entry with HARD BLOCKING validation (Debit == Credit)
  */
-export function postJournalEntry(req, res) {
-  const { id } = req.params;
-  const entry = journalEntries.find((j) => j.id === id);
-
-  if (!entry) {
-    return res.status(404).json({ error: 'Journal entry not found.' });
-  }
-
-  if (entry.status === 'Posted') {
-    return res.json(entry);
-  }
-
-  if (entry.status === 'Cancelled') {
-    return res
-      .status(400)
-      .json({ error: 'Cancelled journal entries cannot be posted.' });
-  }
-
-  // Hard blocking check per Rule 6: Debit must equal Credit before entry can be Posted
-  const totalDebit = entry.lines.reduce(
-    (sum, l) => sum + (Number(l.debit) || 0),
-    0
-  );
-  const totalCredit = entry.lines.reduce(
-    (sum, l) => sum + (Number(l.credit) || 0),
-    0
-  );
-
-  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.001;
-
-  if (!isBalanced || entry.lines.length === 0) {
-    return res.status(400).json({
-      error: `Debit must equal Credit before entry can be Posted. (Total Debit: ${totalDebit.toFixed(
-        2
-      )}, Total Credit: ${totalCredit.toFixed(2)})`,
+export async function postJournalEntry(req, res) {
+  try {
+    const { id } = req.params;
+    const entry = await prisma.journalEntry.findUnique({
+      where: { id },
+      include: {
+        journal: true,
+        lines: {
+          include: {
+            account: true,
+            partner: true,
+          },
+        },
+      },
     });
+
+    if (!entry) {
+      return res.status(404).json({ error: 'Journal entry not found.' });
+    }
+
+    if (entry.status === 'POSTED') {
+      return res.json(formatJournalEntry(entry));
+    }
+
+    // Hard blocking check per Rule 6: Debit must equal Credit before entry can be Posted
+    const totalDebit = entry.lines.reduce(
+      (sum, l) => sum + (Number(l.debit) || 0),
+      0
+    );
+    const totalCredit = entry.lines.reduce(
+      (sum, l) => sum + (Number(l.credit) || 0),
+      0
+    );
+
+    const isBalanced = Math.abs(totalDebit - totalCredit) < 0.001;
+
+    if (!isBalanced || entry.lines.length === 0) {
+      return res.status(400).json({
+        error: `Debit must equal Credit before entry can be Posted. (Total Debit: ${totalDebit.toFixed(
+          2
+        )}, Total Credit: ${totalCredit.toFixed(2)})`,
+      });
+    }
+
+    const posted = await prisma.journalEntry.update({
+      where: { id },
+      data: { status: 'POSTED' },
+      include: {
+        journal: true,
+        lines: {
+          include: {
+            account: true,
+            partner: true,
+          },
+        },
+      },
+    });
+
+    res.json(formatJournalEntry(posted));
+  } catch (error) {
+    console.error('Error posting journal entry:', error);
+    res.status(500).json({ error: error.message || 'Failed to post journal entry.' });
   }
-
-  entry.status = 'Posted';
-  entry.postedAt = new Date().toISOString();
-
-  res.json(entry);
 }
 
 /**
  * POST /api/journal-entries/:id/cancel
  * Cancel a journal entry
  */
-export function cancelJournalEntry(req, res) {
-  const { id } = req.params;
-  const entry = journalEntries.find((j) => j.id === id);
+export async function cancelJournalEntry(req, res) {
+  try {
+    const { id } = req.params;
+    const entry = await prisma.journalEntry.findUnique({ where: { id } });
 
-  if (!entry) {
-    return res.status(404).json({ error: 'Journal entry not found.' });
+    if (!entry) {
+      return res.status(404).json({ error: 'Journal entry not found.' });
+    }
+
+    const updated = await prisma.journalEntry.update({
+      where: { id },
+      data: { status: 'DRAFT' },
+      include: {
+        journal: true,
+        lines: {
+          include: {
+            account: true,
+            partner: true,
+          },
+        },
+      },
+    });
+
+    res.json(formatJournalEntry(updated));
+  } catch (error) {
+    console.error('Error cancelling journal entry:', error);
+    res.status(500).json({ error: error.message || 'Failed to cancel journal entry.' });
   }
-
-  entry.status = 'Cancelled';
-  res.json(entry);
 }
