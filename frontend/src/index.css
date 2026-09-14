@@ -380,11 +380,63 @@ h4 {
 }
 
 .form-select {
-  appearance: none;
-  padding-right: var(--space-8);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%235C5C6E' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  height: 40px;
+  padding: var(--space-2) var(--space-8) var(--space-2) var(--space-3);
+  font-size: var(--text-base);
+  font-family: var(--font-body);
+  font-weight: var(--weight-medium);
+  color: var(--ink-primary);
+  background-color: var(--surface-raised);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%232D6A4F' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
+  background-size: 14px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  transition: border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.form-select:hover:not(:disabled) {
+  border-color: var(--ink-muted);
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-primary-light);
+}
+
+.form-select:disabled {
+  background-color: var(--surface-inset);
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+.form-select option {
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--ink-primary);
+  background-color: var(--surface-raised);
+  padding: 8px 12px;
+}
+
+.form-select optgroup {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+  background-color: var(--surface-inset);
+  padding: 8px 6px;
 }
 
 /* Radio / Checkbox groups */
