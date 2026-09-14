@@ -14,6 +14,10 @@ import ChartOfAccountsPage from './pages/account/ChartOfAccountsPage';
 import JournalsPage from './pages/account/JournalsPage';
 import BudgetReportPage from './pages/reports/BudgetReportPage';
 
+import PurchaseOrdersPage from './pages/purchase/PurchaseOrdersPage';
+import VendorBillsPage from './pages/purchase/VendorBillsPage';
+import BillPaymentPage from './pages/purchase/BillPaymentPage';
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -60,18 +64,9 @@ export default function App() {
             />
 
             {/* Purchase — Phase 5 */}
-            <Route
-              path="purchase/orders"
-              element={<PlaceholderPage title="Purchase orders" icon="📦" />}
-            />
-            <Route
-              path="purchase/bills"
-              element={<PlaceholderPage title="Purchase bills" icon="📄" />}
-            />
-            <Route
-              path="purchase/payments"
-              element={<PlaceholderPage title="Payments" icon="💳" />}
-            />
+            <Route path="purchase/orders" element={<PurchaseOrdersPage />} />
+            <Route path="purchase/bills" element={<VendorBillsPage />} />
+            <Route path="purchase/payments" element={<BillPaymentPage />} />
 
             {/* Account — Phase 2 */}
             <Route

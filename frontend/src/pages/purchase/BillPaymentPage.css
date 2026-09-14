@@ -1,0 +1,10 @@
+.partner-name-cell {
+  font-weight: var(--weight-medium, 500);
+  color: var(--ink-primary, #1A1A2E);
+}
+
+.payment-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-5, 20px);
+}
