@@ -36,15 +36,16 @@ export const users = [
 export const tokens = {};
 
 // 4.3 Chart of Accounts
+// Note: 'Expense' in the store maps to what the spec calls 'Expenses' / 'Other Expenses' in UI
 export const chartOfAccounts = [
-  { id: 'coa-1', name: 'Bank A/c', type: 'Asset' },
-  { id: 'coa-2', name: 'Cash A/c', type: 'Asset' },
-  { id: 'coa-3', name: 'Debtors A/c', type: 'Asset' },
-  { id: 'coa-4', name: 'Creditors A/c', type: 'Liability' },
-  { id: 'coa-5', name: 'Sales Income A/c', type: 'Income' },
-  { id: 'coa-6', name: 'Purchase Expense A/c', type: 'Expense' },
-  { id: 'coa-7', name: 'Other Expense A/c', type: 'Expense' },
-  { id: 'coa-8', name: 'Capital A/c', type: 'Capital' },
+  { id: 'coa-1', name: 'Bank A/c',            type: 'Asset',     archived: false, system: true },
+  { id: 'coa-2', name: 'Cash A/c',            type: 'Asset',     archived: false, system: true },
+  { id: 'coa-3', name: 'Debtors A/c',         type: 'Asset',     archived: false, system: true },
+  { id: 'coa-4', name: 'Creditors A/c',       type: 'Liability', archived: false, system: true },
+  { id: 'coa-5', name: 'Sales Income A/c',    type: 'Income',    archived: false, system: true },
+  { id: 'coa-6', name: 'Purchase Expense A/c', type: 'Expenses', archived: false, system: true },
+  { id: 'coa-7', name: 'Other Expense A/c',   type: 'Other Expenses', archived: false, system: true },
+  { id: 'coa-8', name: 'Capital A/c',         type: 'Capital',   archived: false, system: true },
 ];
 
 // 4.4 Journals
