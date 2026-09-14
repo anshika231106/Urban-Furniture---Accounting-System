@@ -25,6 +25,10 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
+    // Contact users belong in /portal, not the main app
+    if (user.role === 'Contact') {
+      return <Navigate to="/portal" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 

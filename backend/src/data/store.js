@@ -10,6 +10,7 @@ export const users = [
     email: 'admin@urbanfurniture.com',
     password: 'Admin@123!',
     role: 'Admin',
+    contactId: null,
     createdAt: new Date().toISOString(),
   },
   {
@@ -19,6 +20,7 @@ export const users = [
     email: 'user1@urbanfurniture.com',
     password: 'User@123!',
     role: 'Accountant',
+    contactId: null,
     createdAt: new Date().toISOString(),
   },
   {
@@ -28,6 +30,17 @@ export const users = [
     email: 'user@urbanfurniture.com',
     password: 'user',
     role: 'Accountant',
+    contactId: null,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '4',
+    name: 'Acme Furniture Supplies',
+    loginId: 'contact@acmefurniture.com',
+    email: 'contact@acmefurniture.com',
+    password: 'Contact@123!',
+    role: 'Contact',
+    contactId: 'c-1',
     createdAt: new Date().toISOString(),
   },
 ];
@@ -160,6 +173,45 @@ export const journalEntries = [
     ],
     createdAt: new Date().toISOString(),
   },
+];
+
+// Mock Invoices and Bills for Portal
+export const vendorBills = [
+  {
+    id: 'b-1',
+    billNumber: 'Bill/2026/0001',
+    reference: 'REF-ACME-001',
+    vendorId: 'c-1',
+    vendorName: 'Acme Furniture Supplies',
+    billDate: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +7 days
+    status: 'Not Paid',
+    total: 440,
+    amountDue: 440,
+    lines: [
+      { id: 'bl-1', productId: 'p-1', productName: 'Ergonomic Executive Chair', qty: 2, unitPrice: 220, total: 440 }
+    ],
+    createdAt: new Date().toISOString(),
+  }
+];
+
+export const customerInvoices = [
+  {
+    id: 'i-1',
+    invoiceNumber: 'INV/2026/0001',
+    reference: 'PO-URBAN-112',
+    customerId: 'c-2', // Urban Living Studios
+    customerName: 'Urban Living Studios',
+    invoiceDate: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +14 days
+    status: 'Partial',
+    total: 2400,
+    amountDue: 1200,
+    lines: [
+      { id: 'il-1', productId: 'p-2', productName: 'Solid Oak Dining Table', qty: 2, unitPrice: 1200, total: 2400 }
+    ],
+    createdAt: new Date().toISOString(),
+  }
 ];
 
 // Sequence counters

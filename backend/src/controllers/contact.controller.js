@@ -1,4 +1,4 @@
-import { contacts } from '../data/store.js';
+import { contacts, users } from '../data/store.js';
 import { generateId } from '../utils/crypto.js';
 
 export function getContacts(req, res) {
@@ -30,6 +30,20 @@ export function createContact(req, res) {
   };
 
   contacts.push(newContact);
+
+  // Auto-create a portal user for this contact (Phase 8 requirement)
+  const portalUser = {
+    id: generateId(),
+    name: name.trim(),
+    loginId: email.trim(),
+    email: email.trim(),
+    password: 'Contact@123!', // default mock password
+    role: 'Contact',
+    contactId: newContact.id,
+    createdAt: new Date().toISOString(),
+  };
+  users.push(portalUser);
+
   res.status(201).json(newContact);
 }
 

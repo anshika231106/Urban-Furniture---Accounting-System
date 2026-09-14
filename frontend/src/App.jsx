@@ -9,6 +9,7 @@ import CreateUserPage from './pages/auth/CreateUserPage';
 import DashboardPage from './pages/DashboardPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import ProductsPage from './pages/account/ProductsPage';
+import PortalDashboard from './pages/portal/PortalDashboard';
 import ChartOfAccountsPage from './pages/account/ChartOfAccountsPage';
 import JournalsPage from './pages/account/JournalsPage';
 import BudgetReportPage from './pages/reports/BudgetReportPage';
@@ -118,8 +119,8 @@ export default function App() {
           <Route
             path="/portal"
             element={
-              <ProtectedRoute allowedRoles={['ContactUser']}>
-                <PlaceholderPage title="Contact portal" icon="🏠" />
+              <ProtectedRoute allowedRoles={['Contact']}>
+                <PortalDashboard />
               </ProtectedRoute>
             }
           />
