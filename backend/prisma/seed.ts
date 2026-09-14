@@ -27,6 +27,8 @@ import {
   PaymentType,
   PaymentVia,
   PaymentDocStatus,
+  AnalyticType,
+  BudgetStatus,
 } from "../src/generated/prisma/enums.ts";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
@@ -98,6 +100,12 @@ async function upsertContact(data: {
   });
 }
 
+async function upsertAnalyticAccount(name: string, type: AnalyticType) {
+  const existing = await prisma.analyticAccount.findFirst({ where: { name } });
+  if (existing) return existing;
+  return prisma.analyticAccount.create({ data: { name, type } });
+}
+
 async function upsertUser(data: {
   name: string;
   loginId: string;
@@ -106,18 +114,27 @@ async function upsertUser(data: {
   role: UserRole;
   contactId?: string;
 }) {
+  const password = await bcrypt.hash(data.plainPassword, 10);
   const existing = await prisma.user.findFirst({
     where: {
       OR: [{ loginId: data.loginId }, { email: data.email }],
     },
   });
   if (existing) {
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: {
+        name: data.name,
+        password,
+        role: data.role,
+        contactId: data.contactId,
+      },
+    });
     console.log(
-      `  ✓ User with loginId "${data.loginId}" or email "${data.email}" already exists — skipping`
+      `  ✓ User with loginId "${data.loginId}" already exists — credentials refreshed`
     );
     return existing;
   }
-  const password = await bcrypt.hash(data.plainPassword, 10);
   const created = await prisma.user.create({
     data: {
       name: data.name,
@@ -204,6 +221,10 @@ async function main() {
     salesPrice: 3000,
     cost: 1800,
   });
+
+  console.log("\nSeeding Analytic Accounts...");
+  const incomeAnalytic = await upsertAnalyticAccount("Sales Growth", AnalyticType.INCOME);
+  const expenseAnalytic = await upsertAnalyticAccount("Operations", AnalyticType.EXPENSE);
 
   console.log("\nSeeding Contacts...");
   const vendorRahul = await upsertContact({
@@ -299,6 +320,7 @@ async function main() {
           {
             productId: woodenChair.id,
             accountId: purchaseExpenseAccount.id,
+            analyticAccountId: expenseAnalytic.id,
             qty: 10,
             unitPrice: 1500,
             total: 15000,
@@ -340,6 +362,7 @@ async function main() {
           {
             productId: diningTable.id,
             accountId: purchaseExpenseAccount.id,
+            analyticAccountId: expenseAnalytic.id,
             qty: 5,
             unitPrice: 8000,
             total: 40000,
@@ -380,6 +403,7 @@ async function main() {
           {
             productId: bookshelf.id,
             accountId: purchaseExpenseAccount.id,
+            analyticAccountId: expenseAnalytic.id,
             qty: 8,
             unitPrice: 3000,
             total: 24000,
@@ -389,6 +413,11 @@ async function main() {
     },
   });
   console.log(`  + Vendor Bill ${bill3.billNumber} — NOT PAID`);
+
+  await prisma.vendorBillLine.updateMany({
+    where: { vendorBillId: { in: [bill1.id, bill2.id, bill3.id] } },
+    data: { analyticAccountId: expenseAnalytic.id },
+  });
 
   // ------------------------------------------------------------------
   // Customer Invoices — one Paid, one Partial, one Not Paid
@@ -414,6 +443,7 @@ async function main() {
           {
             productId: sofaSet.id,
             accountId: salesIncomeAccount.id,
+            analyticAccountId: incomeAnalytic.id,
             qty: 2,
             unitPrice: 25000,
             total: 50000,
@@ -455,6 +485,7 @@ async function main() {
           {
             productId: officeChair.id,
             accountId: salesIncomeAccount.id,
+            analyticAccountId: incomeAnalytic.id,
             qty: 15,
             unitPrice: 2000,
             total: 30000,
@@ -495,6 +526,7 @@ async function main() {
           {
             productId: coffeeTable.id,
             accountId: salesIncomeAccount.id,
+            analyticAccountId: incomeAnalytic.id,
             qty: 4,
             unitPrice: 4000,
             total: 16000,
@@ -504,6 +536,42 @@ async function main() {
     },
   });
   console.log(`  + Customer Invoice ${inv3.invoiceNumber} — NOT PAID`);
+
+  await prisma.customerInvoiceLine.updateMany({
+    where: { customerInvoiceId: { in: [inv1.id, inv2.id, inv3.id] } },
+    data: { analyticAccountId: incomeAnalytic.id },
+  });
+
+  console.log("\nSeeding Budget...");
+  const existingBudget = await prisma.budget.findFirst({
+    where: { name: "FY 2026 Furniture Plan" },
+  });
+  if (!existingBudget) {
+    await prisma.budget.create({
+      data: {
+        name: "FY 2026 Furniture Plan",
+        startDate: new Date("2026-01-01"),
+        endDate: new Date("2026-12-31"),
+        responsibleId: customerAnanya.id,
+        status: BudgetStatus.CONFIRMED,
+        lines: {
+          create: [
+            {
+              analyticAccountId: incomeAnalytic.id,
+              type: AnalyticType.INCOME,
+              committedAmount: 100000,
+            },
+            {
+              analyticAccountId: expenseAnalytic.id,
+              type: AnalyticType.EXPENSE,
+              committedAmount: 100000,
+            },
+          ],
+        },
+      },
+    });
+    console.log("  + Budget FY 2026 Furniture Plan");
+  }
 
   console.log("\n✅ Seed complete.");
   console.log("\nLogin credentials for testing:");

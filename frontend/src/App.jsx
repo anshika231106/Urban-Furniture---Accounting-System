@@ -11,6 +11,7 @@ import PlaceholderPage from './pages/PlaceholderPage';
 import ProductsPage from './pages/account/ProductsPage';
 import ChartOfAccountsPage from './pages/account/ChartOfAccountsPage';
 import JournalsPage from './pages/account/JournalsPage';
+import BudgetReportPage from './pages/reports/BudgetReportPage';
 
 export default function App() {
   return (
@@ -83,7 +84,7 @@ export default function App() {
             />
             <Route
               path="account/budgets"
-              element={<PlaceholderPage title="Analytical budgets" icon="💼" />}
+              element={<BudgetReportPage />}
             />
             <Route
               path="account/chart-of-accounts"
@@ -109,7 +110,7 @@ export default function App() {
             />
             <Route
               path="reports/budget"
-              element={<PlaceholderPage title="Budget report" icon="🎯" />}
+              element={<BudgetReportPage />}
             />
           </Route>
 

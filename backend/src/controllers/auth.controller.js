@@ -1,16 +1,43 @@
 import { users, tokens, sanitizeUser } from '../data/store.js';
 import { generateId, generateToken } from '../utils/crypto.js';
 import { validateLoginId, validateEmail, validatePassword } from '../utils/validation.js';
+import { prisma } from '../data/prisma.js';
+import bcrypt from 'bcryptjs';
 
-export function login(req, res) {
+export async function login(req, res) {
   const { loginId, password } = req.body;
 
   const cleanId = (loginId || '').trim().toLowerCase();
   const cleanPass = (password || '').trim();
 
-  const user = users.find(
+  let user = users.find(
     (u) => u.loginId.toLowerCase() === cleanId && u.password === cleanPass
   );
+
+  if (!user) {
+    const databaseUser = await prisma.user.findUnique({
+      where: { loginId: cleanId },
+    });
+
+    if (databaseUser && (await bcrypt.compare(cleanPass, databaseUser.password))) {
+      const role = {
+        ADMIN: 'Admin',
+        ACCOUNTANT: 'Accountant',
+        CONTACT: 'ContactUser',
+      }[databaseUser.role] || databaseUser.role;
+
+      user = {
+        id: databaseUser.id,
+        name: databaseUser.name,
+        loginId: databaseUser.loginId,
+        email: databaseUser.email,
+        password: cleanPass,
+        role,
+        createdAt: databaseUser.createdAt.toISOString(),
+      };
+      users.push(user);
+    }
+  }
 
   if (!user) {
     return res.status(401).json({ error: 'Invalid Login Id or Password' });
