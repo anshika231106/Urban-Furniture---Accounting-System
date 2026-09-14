@@ -96,6 +96,7 @@ export async function updateBudget(req, res) {
 export async function confirmBudget(req, res) {
   const budget = await loadBudget(req.params.id);
   if (!budget) return res.status(404).json({ error: 'Budget not found.' });
+  if (budget.status === 'CONFIRMED') return res.json(await serializeBudget(budget));
   if (budget.status !== 'DRAFT') return res.status(400).json({ error: 'Only Draft budgets can be confirmed.' });
   await prisma.budget.update({ where: { id: budget.id }, data: { status: 'CONFIRMED' } });
   res.json(await serializeBudget(await loadBudget(budget.id)));
