@@ -106,8 +106,17 @@ async function upsertUser(data: {
   role: UserRole;
   contactId?: string;
 }) {
-  const existing = await prisma.user.findFirst({ where: { loginId: data.loginId } });
-  if (existing) return existing;
+  const existing = await prisma.user.findFirst({
+    where: {
+      OR: [{ loginId: data.loginId }, { email: data.email }],
+    },
+  });
+  if (existing) {
+    console.log(
+      `  ✓ User with loginId "${data.loginId}" or email "${data.email}" already exists — skipping`
+    );
+    return existing;
+  }
   const password = await bcrypt.hash(data.plainPassword, 10);
   const created = await prisma.user.create({
     data: {
