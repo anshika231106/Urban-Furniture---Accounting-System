@@ -6,6 +6,7 @@ import {
   archiveChartOfAccount,
   getJournals,
   createJournal,
+  updateJournal,
   getAnalyticAccounts,
   createAnalyticAccount,
 } from '../controllers/accounting.controller.js';
@@ -22,6 +23,7 @@ router.delete('/chart-of-accounts/:id', archiveChartOfAccount);
 
 router.get('/journals', getJournals);
 router.post('/journals', createJournal);
+router.put('/journals/:id', updateJournal);
 
 router.get('/analytic-accounts', getAnalyticAccounts);
 router.post('/analytic-accounts', createAnalyticAccount);
