@@ -14,9 +14,11 @@ export default function ListView({
   viewMode = 'list',
   onViewChange,
   onNew,
+  onBack,
   onRowClick,
   searchPlaceholder = 'Search records...',
   extraHeaderActions,
+  emptyMessage = 'No records found',
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
@@ -58,6 +60,11 @@ export default function ListView({
         </div>
 
         <div className="list-view-actions">
+          {onBack && (
+            <button type="button" className="btn btn-outline" onClick={onBack}>
+              ← Back
+            </button>
+          )}
           {extraHeaderActions}
           {onViewChange && (
             <ViewToggle viewMode={viewMode} onViewChange={onViewChange} />
@@ -128,7 +135,7 @@ export default function ListView({
                 <td colSpan={columns.length + 1} className="empty-table-cell">
                   <div className="empty-table-state">
                     <span className="empty-icon">📂</span>
-                    <p>No records found</p>
+                    <p>{emptyMessage}</p>
                     {onNew && (
                       <button
                         type="button"
