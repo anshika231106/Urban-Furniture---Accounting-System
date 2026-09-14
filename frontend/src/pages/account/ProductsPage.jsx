@@ -289,7 +289,7 @@ export default function ProductsPage() {
                   </label>
                   <select
                     id="p-type"
-                    className="form-select"
+                    className="form-select product-form-select"
                     value={formData.type}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, type: e.target.value }))
@@ -302,12 +302,22 @@ export default function ProductsPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="p-category">
-                    Category <span className="required">*</span>
-                  </label>
+                  <div className="form-label-row">
+                    <label className="form-label" htmlFor="p-category">
+                      Category <span className="required">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      className="category-quick-btn"
+                      onClick={() => setIsCategoryModalOpen(true)}
+                      title="Create a new category"
+                    >
+                      + New Category
+                    </button>
+                  </div>
                   <select
                     id="p-category"
-                    className="form-select"
+                    className="form-select product-form-select"
                     value={formData.category}
                     onChange={handleCategorySelectChange}
                   >
@@ -316,7 +326,7 @@ export default function ProductsPage() {
                         {c.name}
                       </option>
                     ))}
-                    <option value="__CREATE_NEW__">
+                    <option value="__CREATE_NEW__" className="opt-create-new">
                       ➕ Create New Category...
                     </option>
                   </select>
