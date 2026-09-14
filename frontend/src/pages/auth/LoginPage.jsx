@@ -26,7 +26,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       const user = await login(loginId.trim(), password);
-      if (user.role === 'ContactUser') {
+      if (user.role === 'Contact' || user.role === 'ContactUser') {
         navigate('/portal');
       } else {
         navigate('/');
@@ -56,20 +56,27 @@ export default function LoginPage() {
         {/* Demo Helper Buttons (Fill inputs only) */}
         <div className="demo-credentials-box">
           <div className="demo-credentials-title">📌 Fill Quick Credentials</div>
-          <div className="demo-btn-group demo-btn-group-two">
+          <div className="demo-btn-group demo-btn-group-two flex gap-2">
             <button
               type="button"
               className="demo-btn"
               onClick={() => handleFillCredentials('admin1', 'Admin@123!')}
             >
-              👑 Fill Admin
+              👑 Admin
             </button>
             <button
               type="button"
               className="demo-btn"
               onClick={() => handleFillCredentials('user1', 'User@123!')}
             >
-              👤 Fill User
+              👤 User
+            </button>
+            <button
+              type="button"
+              className="demo-btn"
+              onClick={() => handleFillCredentials('contact@acmefurniture.com', 'Contact@123!')}
+            >
+              🏢 Portal
             </button>
           </div>
         </div>
