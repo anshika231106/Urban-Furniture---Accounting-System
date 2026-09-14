@@ -6,8 +6,9 @@ import categoryRoutes from './category.routes.js';
 import productRoutes from './product.routes.js';
 import journalRoutes from './journal.routes.js';
 import portalRoutes from './portal.routes.js';
-import { requireAuth, requireRole } from '../middleware/auth.js';
 import budgetRoutes from './budget.routes.js';
+import purchaseRoutes from './purchase.routes.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -24,6 +25,8 @@ router.use('/', internalMiddleware, contactRoutes);
 router.use('/', internalMiddleware, categoryRoutes);
 router.use('/', internalMiddleware, productRoutes);
 router.use('/', internalMiddleware, journalRoutes);
+router.use('/', internalMiddleware, purchaseRoutes);
 router.use('/', budgetRoutes);
 
 export default router;
+

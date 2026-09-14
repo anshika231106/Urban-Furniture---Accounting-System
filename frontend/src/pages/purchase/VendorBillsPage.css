@@ -1,0 +1,79 @@
+.bill-number-cell {
+  font-weight: var(--weight-semibold, 600);
+  color: var(--accent-info, #3478B2);
+}
+
+.text-due-positive {
+  color: var(--accent-danger, #C0392B);
+  font-weight: var(--weight-bold, 700);
+}
+
+.text-due-zero {
+  color: var(--status-paid, #27AE60);
+  font-weight: var(--weight-medium, 500);
+}
+
+.form-success-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #E8F8F0;
+  border: 1px solid #A9DFBF;
+  color: #196F3D;
+  border-radius: var(--radius-md, 8px);
+  font-size: var(--text-sm, 14px);
+  font-weight: var(--weight-medium, 500);
+  animation: fadeIn 200ms ease-out;
+}
+
+.badge-info {
+  background: var(--accent-info-light, #D6EAF8);
+  color: var(--accent-info, #3478B2);
+  font-size: 12px;
+  font-weight: var(--weight-semibold, 600);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.bill-payments-history-card {
+  background: var(--surface-raised, #FFFFFF);
+  border: 1px solid var(--border-subtle, #D9D8D2);
+  border-radius: var(--radius-xl, 12px);
+  padding: var(--space-5, 20px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bill-payments-history-card h3 {
+  font-size: var(--text-md, 16px);
+  font-weight: var(--weight-bold, 700);
+  color: var(--ink-primary, #1A1A2E);
+  margin: 0;
+}
+
+.payments-history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.payments-history-table th {
+  background: var(--surface-base, #F8F7F4);
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--ink-secondary, #5C5C6E);
+  border-bottom: 1px solid var(--border-subtle, #D9D8D2);
+}
+
+.payments-history-table td {
+  padding: 10px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-subtle, #EFEEE9);
+}
+
+.payments-history-table tr:last-child td {
+  border-bottom: none;
+}
