@@ -1,0 +1,487 @@
+/* ==========================================================================
+   JournalEntriesPage Styles — Urban Furniture Accounting System
+   Adheres to SKILL.md: intentional typography, sentence case, disciplined layout
+   ========================================================================== */
+
+.je-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.je-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 360px;
+  gap: var(--space-4);
+  color: var(--ink-secondary);
+  font-size: var(--text-sm);
+}
+
+/* ─── List View Cells ────────────────────────────────────────────────────── */
+.je-date-cell {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-sm);
+  color: var(--ink-secondary);
+}
+
+.je-number-code {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  color: var(--accent-primary);
+  background: var(--accent-primary-light);
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm);
+}
+
+.je-partner-cell {
+  font-weight: var(--weight-medium);
+  color: var(--ink-primary);
+  font-size: var(--text-sm);
+}
+
+.je-muted {
+  color: var(--ink-muted);
+}
+
+.je-journal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--surface-inset);
+  border: 1px solid var(--border-subtle);
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--ink-primary);
+}
+
+.je-journal-icon {
+  font-size: 0.95rem;
+}
+
+.je-total-cell {
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-primary);
+}
+
+/* ─── Clean Status Pills (Sentence Case) ─────────────────────────────────── */
+.je-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  line-height: 1.4;
+}
+
+.je-status-draft {
+  background: var(--status-draft-bg);
+  color: #555e61;
+  border: 1px solid var(--border-subtle);
+}
+
+.je-status-posted {
+  background: var(--status-posted-bg);
+  color: #1b4332;
+  border: 1px solid #c7eed8;
+}
+
+/* ═══ FORM VIEW ════════════════════════════════════════════════════════════ */
+.je-form-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: var(--space-4) 0 var(--space-16);
+  width: 100%;
+}
+
+.je-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.je-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+  margin-bottom: var(--space-1);
+}
+
+.je-breadcrumb-link {
+  cursor: pointer;
+  color: var(--accent-primary);
+  font-weight: var(--weight-medium);
+}
+
+.je-breadcrumb-link:hover {
+  text-decoration: underline;
+}
+
+.je-breadcrumb-separator {
+  color: var(--border-subtle);
+}
+
+.je-breadcrumb-current {
+  color: var(--ink-secondary);
+}
+
+.je-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.je-heading {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--ink-primary);
+  margin: 0;
+  line-height: var(--leading-tight);
+}
+
+.je-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.je-btn-post {
+  background: var(--accent-primary) !important;
+  border-color: var(--accent-primary) !important;
+  color: var(--ink-inverse) !important;
+}
+
+.je-btn-post:hover:not(:disabled) {
+  background: var(--accent-primary-hover) !important;
+}
+
+.je-btn-cancel {
+  color: var(--accent-danger) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+.je-btn-cancel:hover {
+  background: var(--accent-danger-light) !important;
+  border-color: var(--accent-danger) !important;
+}
+
+.je-locked-tag {
+  background: var(--surface-inset);
+  border: 1px solid var(--border-subtle);
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--ink-secondary);
+}
+
+/* ─── Notification Banners ───────────────────────────────────────────────── */
+.je-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.je-banner-icon {
+  font-size: 1.1rem;
+}
+
+.je-banner-error {
+  background: #fdf2f2;
+  border: 1px solid #f9b4b4;
+  color: #991b1b;
+}
+
+.je-banner-success {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+
+/* ─── Form Cards ─────────────────────────────────────────────────────────── */
+.je-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+
+.je-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.je-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.je-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--ink-primary);
+}
+
+.je-label .required {
+  color: var(--accent-danger);
+}
+
+.je-input,
+.je-select {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--ink-primary);
+  background: var(--surface-raised);
+  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.je-input:focus,
+.je-select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.12);
+}
+
+.je-input-readonly {
+  background: var(--surface-inset);
+  color: var(--ink-secondary);
+  cursor: not-allowed;
+}
+
+/* ─── Ledger Lines Table ─────────────────────────────────────────────────── */
+.je-lines-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-4);
+  gap: var(--space-3);
+}
+
+.je-section-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-primary);
+  margin: 0 0 var(--space-1) 0;
+}
+
+.je-section-subtitle {
+  font-size: var(--text-xs);
+  color: var(--ink-secondary);
+  margin: 0;
+  line-height: var(--leading-normal);
+}
+
+.je-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.je-lines-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.je-lines-table th {
+  background: var(--surface-inset);
+  padding: var(--space-3) var(--space-3);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-xs);
+  color: var(--ink-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.je-lines-table td {
+  padding: var(--space-2) var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.je-line-row:last-child td {
+  border-bottom: none;
+}
+
+.je-line-row:hover {
+  background: #fafaf8;
+}
+
+.je-line-select {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  background: var(--surface-raised);
+  color: var(--ink-primary);
+}
+
+.je-line-select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.je-line-input {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-primary);
+}
+
+.je-line-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.je-input-right {
+  text-align: right;
+}
+
+.je-line-remove-btn {
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+}
+
+.je-line-remove-btn:hover:not(:disabled) {
+  color: var(--accent-danger);
+  background: var(--accent-danger-light);
+}
+
+.je-line-remove-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.je-add-line-footer {
+  padding-top: var(--space-3);
+}
+
+.je-add-btn {
+  font-size: var(--text-xs);
+  border-style: dashed !important;
+}
+
+/* ─── Ledger Totals & Double-Entry Strip ("Bold in One Place") ───────────── */
+.je-totals-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-inset);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.je-balance-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.je-balance-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.je-balance-ok {
+  background: var(--status-posted-bg);
+  color: #1b4332;
+  border: 1px solid #a9dfbf;
+}
+
+.je-balance-warn {
+  background: #fdf2f2;
+  color: #991b1b;
+  border: 1px solid #f9b4b4;
+}
+
+.balance-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.je-totals-grid {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.je-total-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.je-total-label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--ink-secondary);
+}
+
+.je-total-value {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-primary);
+}
+
+/* ─── Imbalance Pulse Animation ──────────────────────────────────────────── */
+@keyframes shakeAnimation {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.shake-animation {
+  animation: shakeAnimation 0.45s ease-in-out;
+  border-color: var(--accent-danger) !important;
+}

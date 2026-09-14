@@ -14,6 +14,7 @@ import PortalDashboard from './pages/portal/PortalDashboard';
 import ChartOfAccountsPage from './pages/account/ChartOfAccountsPage';
 import JournalsPage from './pages/account/JournalsPage';
 import BudgetReportPage from './pages/reports/BudgetReportPage';
+import JournalEntriesPage from './pages/account/JournalEntriesPage';
 
 import PurchaseOrdersPage from './pages/purchase/PurchaseOrdersPage';
 import VendorBillsPage from './pages/purchase/VendorBillsPage';
@@ -90,7 +91,7 @@ export default function App() {
             />
             <Route
               path="account/journal-entries"
-              element={<PlaceholderPage title="Journal entries" icon="✏️" />}
+              element={<JournalEntriesPage />}
             />
 
             {/* Reports — Phase 7 */}

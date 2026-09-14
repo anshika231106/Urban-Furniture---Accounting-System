@@ -2,21 +2,12 @@ import { useState, useEffect } from 'react';
 import ListView from '../../components/common/ListView';
 import './JournalsPage.css';
 
-const JOURNAL_TYPES = ['Sales', 'Purchase', 'Bank', 'Cash'];
-
-const TYPE_BADGE_CLASS = {
-  Sales: 'badge-type-sales',
-  Purchase: 'badge-type-purchase',
-  Bank: 'badge-type-bank',
-  Cash: 'badge-type-cash',
-};
-
-const TYPE_ICON = {
-  Sales: '🧾',
-  Purchase: '📦',
-  Bank: '🏦',
-  Cash: '💵',
-};
+const JOURNAL_TYPES = [
+  { type: 'Sales', icon: '🧾', desc: 'Customer sales, invoices, and revenue records' },
+  { type: 'Purchase', icon: '📦', desc: 'Vendor bills, supplier orders, and direct costs' },
+  { type: 'Bank', icon: '🏦', desc: 'Wire transfers, account deposits, and bank transactions' },
+  { type: 'Cash', icon: '💵', desc: 'Petty cash, direct till receipts, and cash payments' },
+];
 
 export default function JournalsPage() {
   const [journals, setJournals] = useState([]);
@@ -52,15 +43,15 @@ export default function JournalsPage() {
         fetch('/api/chart-of-accounts', { headers }),
       ]);
 
-      if (!jRes.ok || !coaRes.ok) throw new Error('Failed to load journal data.');
+      if (!jRes.ok || !coaRes.ok) throw new Error('Failed to load journals data.');
 
       const jData = await jRes.json();
       const coaData = await coaRes.json();
 
       setJournals(jData);
-      setChartOfAccounts(coaData);
+      setChartOfAccounts(coaData.filter((a) => !a.archived));
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Error loading data.');
     } finally {
       setLoading(false);
     }
@@ -102,11 +93,11 @@ export default function JournalsPage() {
     setFormSuccess('');
 
     if (!formData.name.trim()) {
-      setFormError('Journal Name is required.');
+      setFormError('Please enter a journal name.');
       return;
     }
     if (!formData.type) {
-      setFormError('Journal Type is required.');
+      setFormError('Please select a journal type.');
       return;
     }
 
@@ -135,41 +126,43 @@ export default function JournalsPage() {
 
       await fetchData();
       setFormSuccess(isEdit ? 'Journal updated successfully.' : 'Journal created successfully.');
-      // Brief success flash then go back to list
       setTimeout(() => {
         setViewMode('list');
-      }, 800);
+      }, 700);
     } catch (err) {
-      setFormError(err.message);
+      setFormError(err.message || 'An error occurred.');
     } finally {
       setFormSubmitting(false);
     }
   };
 
-  // List View columns as per MVP §4.4
+  // List View columns per MVP §4.4
   const columns = [
     {
       key: 'name',
-      label: 'Journal Name',
-      render: (j) => (
-        <div className="journal-name-cell">
-          <span className="journal-type-icon">{TYPE_ICON[j.type] || '📓'}</span>
-          <span className="journal-cell-name">{j.name}</span>
-        </div>
-      ),
+      label: 'Journal name',
+      render: (j) => {
+        const item = JOURNAL_TYPES.find((t) => t.type.toLowerCase() === (j.type || '').toLowerCase());
+        return (
+          <div className="journal-name-cell">
+            <span className="journal-type-icon">{item?.icon || '📓'}</span>
+            <span className="journal-cell-name">{j.name}</span>
+          </div>
+        );
+      },
     },
     {
       key: 'type',
       label: 'Type',
       render: (j) => (
-        <span className={`badge journal-type-badge ${TYPE_BADGE_CLASS[j.type] || ''}`}>
+        <span className={`journal-type-tag journal-type-${(j.type || 'sales').toLowerCase()}`}>
           {j.type}
         </span>
       ),
     },
     {
       key: 'defaultAccount',
-      label: 'Default Account',
+      label: 'Default account',
       render: (j) =>
         j.defaultAccount ? (
           <span className="journal-account-chip">{j.defaultAccount}</span>
@@ -183,26 +176,40 @@ export default function JournalsPage() {
     return (
       <div className="journals-page-loading">
         <div className="auth-loading-spinner"></div>
-        <p>Loading Journals...</p>
+        <p>Loading journals...</p>
       </div>
     );
   }
 
   // ─── FORM VIEW ────────────────────────────────────────────────────────────
   if (viewMode === 'form') {
+    const activeTypeObj = JOURNAL_TYPES.find((t) => t.type === formData.type) || JOURNAL_TYPES[0];
+
     return (
       <div className="journal-form-container">
         {/* Document Header Bar */}
-        <div className="form-header-bar">
-          <div className="form-header-title">
-            <h1>{editingJournal ? 'Edit Journal' : 'New Journal'}</h1>
-            <p className="form-subtitle">
+        <div className="journal-form-header">
+          <div className="journal-header-title-group">
+            <div className="journal-breadcrumb">
+              <span className="journal-breadcrumb-link" onClick={handleBack}>
+                Journals
+              </span>
+              <span className="journal-breadcrumb-sep">/</span>
+              <span className="journal-breadcrumb-current">
+                {editingJournal ? editingJournal.name : 'New journal'}
+              </span>
+            </div>
+            <h1 className="journal-page-heading">
+              {editingJournal ? editingJournal.name : 'New journal'}
+            </h1>
+            <p className="journal-page-subheading">
               {editingJournal
-                ? `Editing "${editingJournal.name}"`
-                : 'Configure a new accounting journal'}
+                ? `Update configuration and default account for ${editingJournal.name}.`
+                : 'Create a dedicated journal book to organize double-entry ledger transactions.'}
             </p>
           </div>
-          <div className="form-header-actions">
+
+          <div className="journal-form-actions">
             <button
               type="button"
               id="journal-form-back"
@@ -211,119 +218,126 @@ export default function JournalsPage() {
             >
               ← Back
             </button>
-            {!editingJournal && (
-              <button
-                type="button"
-                id="journal-form-new"
-                className="btn btn-outline"
-                onClick={handleNew}
-              >
-                + New
-              </button>
-            )}
             <button
               type="button"
-              id="journal-form-confirm"
+              id="journal-form-save"
               className="btn btn-primary"
               onClick={handleFormSubmit}
               disabled={formSubmitting}
             >
-              {formSubmitting ? 'Saving...' : 'Confirm'}
+              {formSubmitting ? 'Saving...' : editingJournal ? 'Save changes' : 'Create journal'}
             </button>
           </div>
         </div>
 
+        {/* Notifications */}
+        {formError && (
+          <div className="journal-banner journal-banner-error" role="alert">
+            <span className="journal-banner-icon">⚠️</span>
+            <span>{formError}</span>
+          </div>
+        )}
+        {formSuccess && (
+          <div className="journal-banner journal-banner-success" role="status">
+            <span className="journal-banner-icon">✅</span>
+            <span>{formSuccess}</span>
+          </div>
+        )}
+
         {/* Form Card */}
         <div className="journal-form-card">
-          {formError && <div className="form-error-banner">{formError}</div>}
-          {formSuccess && <div className="form-success-banner">{formSuccess}</div>}
-
-          {/* Type selector tabs */}
-          <div className="journal-type-selector">
-            <p className="journal-type-label">
-              Journal Type <span className="required">*</span>
-            </p>
-            <div className="journal-type-tabs" role="radiogroup" aria-label="Journal Type">
-              {JOURNAL_TYPES.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  id={`journal-type-${t.toLowerCase()}`}
-                  role="radio"
-                  aria-checked={formData.type === t}
-                  className={`journal-type-tab ${formData.type === t ? 'active' : ''}`}
-                  onClick={() =>
-                    setFormData((prev) => ({ ...prev, type: t, defaultAccount: '' }))
-                  }
-                >
-                  <span className="tab-icon">{TYPE_ICON[t]}</span>
-                  <span className="tab-label">{t}</span>
-                </button>
-              ))}
+          {/* Type Selector Grid */}
+          <div className="journal-type-section">
+            <label className="journal-section-label">
+              Journal type <span className="required">*</span>
+            </label>
+            <div className="journal-type-grid" role="radiogroup" aria-label="Journal Type">
+              {JOURNAL_TYPES.map((t) => {
+                const isSelected = formData.type === t.type;
+                return (
+                  <button
+                    key={t.type}
+                    type="button"
+                    id={`journal-type-${t.type.toLowerCase()}`}
+                    role="radio"
+                    aria-checked={isSelected}
+                    className={`journal-type-card ${isSelected ? 'active' : ''}`}
+                    onClick={() =>
+                      setFormData((prev) => ({ ...prev, type: t.type }))
+                    }
+                  >
+                    <div className="type-card-header">
+                      <span className="type-card-icon">{t.icon}</span>
+                      <span className="type-card-title">{t.type}</span>
+                    </div>
+                    <p className="type-card-desc">{t.desc}</p>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          <form onSubmit={handleFormSubmit} className="journal-form-fields">
-            {/* Journal Name */}
-            <div className="form-group">
-              <label className="form-label" htmlFor="j-name">
-                Journal Name <span className="required">*</span>
+          {/* Core Fields */}
+          <form onSubmit={handleFormSubmit} className="journal-fields-layout">
+            <div className="journal-field-group">
+              <label className="journal-field-label" htmlFor="j-name">
+                Journal name <span className="required">*</span>
               </label>
               <input
                 id="j-name"
                 type="text"
-                className="form-input"
+                className="journal-field-input"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, name: e.target.value }))
                 }
-                placeholder="e.g. Sales, Bank, Petty Cash"
+                placeholder="e.g. Sales, Main Bank Account, Warehouse Cash"
                 required
               />
-              <p className="form-hint">
-                A short, descriptive name for this journal (e.g. "Sales", "Bank").
+              <p className="journal-field-hint">
+                The public name displayed across invoices, bills, and payment receipts.
               </p>
             </div>
 
-            {/* Default Account — Many-to-one from Chart of Accounts */}
-            <div className="form-group">
-              <label className="form-label" htmlFor="j-default-account">
-                Default Account
+            <div className="journal-field-group">
+              <label className="journal-field-label" htmlFor="j-default-account">
+                Default account
               </label>
               <select
                 id="j-default-account"
-                className="form-select"
+                className="journal-field-select"
                 value={formData.defaultAccount}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, defaultAccount: e.target.value }))
                 }
               >
-                <option value="">— None —</option>
+                <option value="">— Select from chart of accounts —</option>
                 {chartOfAccounts.map((coa) => (
                   <option key={coa.id} value={coa.name}>
                     {coa.name} ({coa.type})
                   </option>
                 ))}
               </select>
-              <p className="form-hint">
-                Linked to Chart of Accounts — the account this journal defaults to when posting entries.
+              <p className="journal-field-hint">
+                When posting transactions in this journal, new line items will automatically link to this account.
               </p>
             </div>
           </form>
 
-          {/* Preview strip */}
-          <div className="journal-preview-strip">
-            <div className="preview-label">Preview</div>
-            <div className="preview-row">
-              <span className={`badge journal-type-badge ${TYPE_BADGE_CLASS[formData.type] || ''}`}>
-                {formData.type}
+          {/* Visual Summary Box */}
+          <div className="journal-summary-box">
+            <div className="summary-title">Summary preview</div>
+            <div className="summary-row">
+              <span className={`journal-type-tag journal-type-${formData.type.toLowerCase()}`}>
+                {activeTypeObj.icon} {formData.type}
               </span>
-              <span className="preview-name">{formData.name || 'Journal Name'}</span>
-              {formData.defaultAccount && (
-                <>
-                  <span className="preview-arrow">→</span>
-                  <span className="journal-account-chip">{formData.defaultAccount}</span>
-                </>
+              <span className="summary-name">{formData.name || 'Untitled journal'}</span>
+              {formData.defaultAccount ? (
+                <span className="journal-account-chip">
+                  Account: {formData.defaultAccount}
+                </span>
+              ) : (
+                <span className="summary-unassigned">No default account assigned</span>
               )}
             </div>
           </div>
@@ -332,13 +346,13 @@ export default function JournalsPage() {
     );
   }
 
-  // ─── LIST VIEW (DEFAULT) ───────────────────────────────────────────────────
+  // ─── LIST VIEW ─────────────────────────────────────────────────────────────
   return (
-    <div className="journals-page">
-      {error && <div className="form-error-banner journals-error">{error}</div>}
+    <div className="journals-page-layout">
+      {error && <div className="journal-banner journal-banner-error">{error}</div>}
       <ListView
         title="Journals"
-        subtitle="Manage accounting journals — Sales, Purchase, Bank, and Cash"
+        subtitle="Accounting registers categorized by Sales, Purchase, Bank, and Cash"
         data={journals}
         columns={columns}
         viewMode="list"
