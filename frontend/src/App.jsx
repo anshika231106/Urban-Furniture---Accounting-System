@@ -9,6 +9,7 @@ import CreateUserPage from './pages/auth/CreateUserPage';
 import DashboardPage from './pages/DashboardPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import ProductsPage from './pages/account/ProductsPage';
+import ChartOfAccountsPage from './pages/account/ChartOfAccountsPage';
 
 export default function App() {
   return (
@@ -85,9 +86,7 @@ export default function App() {
             />
             <Route
               path="account/chart-of-accounts"
-              element={
-                <PlaceholderPage title="Chart of accounts" icon="📑" />
-              }
+              element={<ChartOfAccountsPage />}
             />
             <Route
               path="account/journals"
