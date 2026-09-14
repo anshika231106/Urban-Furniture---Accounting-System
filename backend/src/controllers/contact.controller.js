@@ -1,151 +1,133 @@
-import { prisma } from '../lib/prisma.js';
+import { prisma } from '../data/prisma.js';
+import { provisionPortalAccessIfNeeded } from '../utils/portalAccess.js';
 
-function toContactTypeEnum(type) {
-  if (!type) return 'CUSTOMER';
-  const upper = String(type).toUpperCase();
-  if (['CUSTOMER', 'VENDOR', 'BOTH'].includes(upper)) {
-    return upper;
-  }
-  return 'CUSTOMER';
-}
+const TYPE_TO_DB = {
+  Customer: 'CUSTOMER',
+  Vendor: 'VENDOR',
+  Both: 'BOTH',
+};
 
-function fromContactTypeEnum(type) {
-  switch (type) {
-    case 'CUSTOMER':
-      return 'Customer';
-    case 'VENDOR':
-      return 'Vendor';
-    case 'BOTH':
-      return 'Both';
-    default:
-      return type ? type.charAt(0).toUpperCase() + type.slice(1).toLowerCase() : 'Customer';
-  }
-}
+const TYPE_TO_UI = {
+  CUSTOMER: 'Customer',
+  VENDOR: 'Vendor',
+  BOTH: 'Both',
+};
 
-function formatContact(c) {
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function serializeContact(contact) {
   return {
-    id: c.id,
-    name: c.name,
-    email: c.email,
-    phone: c.phone || '',
-    street: c.street || '',
-    city: c.city || '',
-    state: c.state || '',
-    country: c.country || '',
-    pincode: c.pincode || '',
-    type: fromContactTypeEnum(c.type),
-    imageUrl: c.imageUrl || '',
-    archived: Boolean(c.archived),
-    createdAt: c.createdAt ? new Date(c.createdAt).toISOString() : new Date().toISOString(),
+    id: contact.id,
+    name: contact.name,
+    type: TYPE_TO_UI[contact.type] || contact.type,
+    email: contact.email,
+    phone: contact.phone || '',
+    street: contact.street || '',
+    city: contact.city || '',
+    state: contact.state || '',
+    country: contact.country || '',
+    pincode: contact.pincode || '',
+    imageUrl: contact.imageUrl || '',
+    portalAccessRequested: contact.portalAccessRequested,
+    createdAt: contact.createdAt,
   };
 }
 
+function validateContactInput(body) {
+  const { name, type, email } = body;
+  if (!name || !name.trim()) return 'Contact Name is required.';
+  if (!type || !TYPE_TO_DB[type]) return 'Type is required.';
+  if (!email || !email.trim()) return 'Email is required.';
+  if (!EMAIL_PATTERN.test(email.trim())) return 'Please enter a valid email address.';
+  return null;
+}
+
 /**
- * GET /api/contacts
- * Query params: ?type=Vendor|Customer|Both&includeArchived=true
+ * GET /contacts?search=
  */
 export async function getContacts(req, res) {
-  try {
-    const { type, includeArchived } = req.query;
-    const where = {};
-    if (includeArchived !== 'true') {
-      where.archived = false;
-    }
-    if (type) {
-      const typeEnum = toContactTypeEnum(type);
-      if (typeEnum === 'VENDOR') {
-        where.type = { in: ['VENDOR', 'BOTH'] };
-      } else if (typeEnum === 'CUSTOMER') {
-        where.type = { in: ['CUSTOMER', 'BOTH'] };
-      } else {
-        where.type = typeEnum;
+  const search = (req.query.search || '').trim();
+  const contacts = await prisma.contact.findMany({
+    where: search
+      ? {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+        ],
       }
-    }
-
-    const list = await prisma.contact.findMany({
-      where,
-      orderBy: { name: 'asc' },
-    });
-
-    res.json(list.map(formatContact));
-  } catch (err) {
-    console.error('getContacts error:', err);
-    res.status(500).json({ error: 'Failed to fetch contacts from database.' });
-  }
+      : {},
+    orderBy: { name: 'asc' },
+  });
+  res.json(contacts.map(serializeContact));
 }
 
-/**
- * POST /api/contacts
- */
 export async function createContact(req, res) {
-  try {
-    const { name, email, phone, street, city, state, country, pincode, type, imageUrl } = req.body;
-    if (!name || !name.trim()) return res.status(400).json({ error: 'Contact Name is required.' });
-    if (!email || !email.trim()) return res.status(400).json({ error: 'Email is required.' });
+  const validationError = validateContactInput(req.body);
+  if (validationError) return res.status(400).json({ error: validationError });
 
-    const existing = await prisma.contact.findUnique({
-      where: { email: email.trim().toLowerCase() },
-    });
-    if (existing) {
-      return res.status(400).json({ error: 'Contact with this email already exists.' });
-    }
+  const { name, type, email, phone, street, city, state, country, pincode, imageUrl, portalAccessRequested } = req.body;
+  const cleanEmail = email.trim();
 
-    const created = await prisma.contact.create({
-      data: {
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone || null,
-        street: street || null,
-        city: city || null,
-        state: state || null,
-        country: country || null,
-        pincode: pincode || null,
-        type: toContactTypeEnum(type),
-        imageUrl: imageUrl || null,
-        archived: false,
-      },
-    });
+  const existing = await prisma.contact.findFirst({
+    where: { email: { equals: cleanEmail, mode: 'insensitive' } },
+  });
+  if (existing) return res.status(400).json({ error: 'A contact with this email already exists.' });
 
-    res.status(201).json(formatContact(created));
-  } catch (err) {
-    console.error('createContact error:', err);
-    res.status(500).json({ error: 'Failed to create contact in database.' });
-  }
+  const contact = await prisma.contact.create({
+    data: {
+      name: name.trim(),
+      type: TYPE_TO_DB[type],
+      email: cleanEmail,
+      phone: phone?.trim() || null,
+      street: street?.trim() || null,
+      city: city?.trim() || null,
+      state: state?.trim() || null,
+      country: country?.trim() || null,
+      pincode: pincode?.trim() || null,
+      imageUrl: imageUrl || null,
+      portalAccessRequested: Boolean(portalAccessRequested) && Boolean(cleanEmail),
+    },
+  });
+
+  await provisionPortalAccessIfNeeded(contact);
+
+  res.status(201).json(serializeContact(contact));
 }
 
-/**
- * PUT /api/contacts/:id
- */
 export async function updateContact(req, res) {
-  try {
-    const { id } = req.params;
-    const existing = await prisma.contact.findUnique({ where: { id } });
-    if (!existing) return res.status(404).json({ error: 'Contact not found.' });
+  const { id } = req.params;
+  const existingContact = await prisma.contact.findUnique({ where: { id } });
+  if (!existingContact) return res.status(404).json({ error: 'Contact not found.' });
 
-    const { name, email, phone, street, city, state, country, pincode, type, imageUrl, archived } = req.body;
+  const validationError = validateContactInput(req.body);
+  if (validationError) return res.status(400).json({ error: validationError });
 
-    const data = {};
-    if (name !== undefined) data.name = name.trim();
-    if (email !== undefined) data.email = email.trim().toLowerCase();
-    if (phone !== undefined) data.phone = phone;
-    if (street !== undefined) data.street = street;
-    if (city !== undefined) data.city = city;
-    if (state !== undefined) data.state = state;
-    if (country !== undefined) data.country = country;
-    if (pincode !== undefined) data.pincode = pincode;
-    if (type !== undefined) data.type = toContactTypeEnum(type);
-    if (imageUrl !== undefined) data.imageUrl = imageUrl;
-    if (archived !== undefined) data.archived = Boolean(archived);
+  const { name, type, email, phone, street, city, state, country, pincode, imageUrl, portalAccessRequested } = req.body;
+  const cleanEmail = email.trim();
 
-    const updated = await prisma.contact.update({
-      where: { id },
-      data,
-    });
+  const duplicate = await prisma.contact.findFirst({
+    where: { email: { equals: cleanEmail, mode: 'insensitive' }, NOT: { id } },
+  });
+  if (duplicate) return res.status(400).json({ error: 'A contact with this email already exists.' });
 
-    res.json(formatContact(updated));
-  } catch (err) {
-    console.error('updateContact error:', err);
-    res.status(500).json({ error: 'Failed to update contact.' });
-  }
+  const contact = await prisma.contact.update({
+    where: { id },
+    data: {
+      name: name.trim(),
+      type: TYPE_TO_DB[type],
+      email: cleanEmail,
+      phone: phone?.trim() || null,
+      street: street?.trim() || null,
+      city: city?.trim() || null,
+      state: state?.trim() || null,
+      country: country?.trim() || null,
+      pincode: pincode?.trim() || null,
+      imageUrl: imageUrl || null,
+      portalAccessRequested: Boolean(portalAccessRequested) && Boolean(cleanEmail),
+    },
+  });
+
+  await provisionPortalAccessIfNeeded(contact);
+
+  res.json(serializeContact(contact));
 }
-

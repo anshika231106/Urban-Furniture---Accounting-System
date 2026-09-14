@@ -13,10 +13,12 @@ export default function KanbanView({
   viewMode = 'kanban',
   onViewChange,
   onNew,
+  onBack,
   onCardClick,
   searchPlaceholder = 'Search cards...',
   renderCard,
   extraHeaderActions,
+  emptyMessage = 'No items found',
 }) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -38,6 +40,11 @@ export default function KanbanView({
         </div>
 
         <div className="kanban-view-actions">
+          {onBack && (
+            <button type="button" className="btn btn-outline" onClick={onBack}>
+              ← Back
+            </button>
+          )}
           {extraHeaderActions}
           {onViewChange && (
             <ViewToggle viewMode={viewMode} onViewChange={onViewChange} />
@@ -80,7 +87,7 @@ export default function KanbanView({
       {filteredData.length === 0 ? (
         <div className="kanban-empty-state">
           <span className="empty-icon">📦</span>
-          <p>No items found</p>
+          <p>{emptyMessage}</p>
           {onNew && (
             <button
               type="button"

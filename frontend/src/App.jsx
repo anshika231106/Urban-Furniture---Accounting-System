@@ -9,6 +9,7 @@ import CreateUserPage from './pages/auth/CreateUserPage';
 import DashboardPage from './pages/DashboardPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import ProductsPage from './pages/account/ProductsPage';
+import ContactsPage from './pages/account/ContactsPage';
 import PortalDashboard from './pages/portal/PortalDashboard';
 import ChartOfAccountsPage from './pages/account/ChartOfAccountsPage';
 import JournalsPage from './pages/account/JournalsPage';
@@ -69,10 +70,7 @@ export default function App() {
             <Route path="purchase/payments" element={<BillPaymentPage />} />
 
             {/* Account — Phase 2 */}
-            <Route
-              path="account/contacts"
-              element={<PlaceholderPage title="Contacts" icon="👤" />}
-            />
+            <Route path="account/contacts" element={<ContactsPage />} />
             <Route path="account/products" element={<ProductsPage />} />
             <Route
               path="account/analytics"

@@ -23,7 +23,7 @@ export async function login(req, res) {
       const role = {
         ADMIN: 'Admin',
         ACCOUNTANT: 'Accountant',
-        CONTACT: 'ContactUser',
+        CONTACT: 'Contact',
       }[databaseUser.role] || databaseUser.role;
 
       user = {
@@ -33,6 +33,7 @@ export async function login(req, res) {
         email: databaseUser.email,
         password: cleanPass,
         role,
+        contactId: databaseUser.contactId || null,
         createdAt: databaseUser.createdAt.toISOString(),
       };
       users.push(user);

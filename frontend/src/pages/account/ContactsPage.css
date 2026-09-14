@@ -1,0 +1,179 @@
+.contacts-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+.contacts-page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 12px;
+  color: var(--ink-secondary, #5C5C6E);
+}
+
+/* List cell avatar */
+.contact-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-subtle, #D9D8D2);
+}
+
+.contact-avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-inset, #EFEEE9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border: 1px solid var(--border-subtle, #D9D8D2);
+}
+
+/* Form View Document Layout */
+.contact-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+.contact-form-card {
+  background: var(--surface-raised, #FFFFFF);
+  border: 1px solid var(--border-subtle, #D9D8D2);
+  border-radius: var(--radius-xl, 12px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: var(--space-6, 24px);
+}
+
+.contact-form-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-8, 32px);
+}
+
+.form-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4, 16px);
+}
+
+.address-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4, 16px);
+  margin-top: 8px;
+}
+
+.field-error {
+  display: block;
+  color: var(--accent-danger, #C0392B);
+  font-size: var(--text-xs, 12px);
+  margin-top: 4px;
+}
+
+.input-error {
+  border-color: var(--accent-danger, #C0392B) !important;
+}
+
+.portal-access-group {
+  margin-top: 4px;
+}
+
+.portal-access-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-sm, 14px);
+  color: var(--ink-primary, #1A1A2E);
+  cursor: pointer;
+}
+
+.portal-access-checkbox.disabled {
+  color: var(--ink-secondary, #5C5C6E);
+  cursor: not-allowed;
+}
+
+.portal-access-checkbox input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+}
+
+.portal-access-checkbox input[type='checkbox']:disabled {
+  cursor: not-allowed;
+}
+
+/* Kanban card */
+.contact-kanban-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.contact-kanban-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border-subtle, #D9D8D2);
+}
+
+.contact-kanban-img-placeholder {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--surface-inset, #EFEEE9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-subtle, #D9D8D2);
+}
+
+.contact-kanban-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.contact-kanban-name {
+  font-size: var(--text-base, 16px);
+  font-weight: var(--weight-semibold, 600);
+  color: var(--ink-primary, #1A1A2E);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contact-kanban-email,
+.contact-kanban-phone {
+  font-size: var(--text-xs, 12px);
+  color: var(--ink-secondary, #5C5C6E);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .contact-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-row-2,
+  .address-row-2 {
+    grid-template-columns: 1fr;
+  }
+}
